@@ -1,0 +1,5 @@
+import { isUsableEnvValue } from "./env";
+function secret(){const value=process.env.SUPABASE_SECRET_KEY;return isUsableEnvValue(value)?value:""}
+async function signature(payload:string){const key=await crypto.subtle.importKey("raw",new TextEncoder().encode(secret()),{name:"HMAC",hash:"SHA-256"},false,["sign"]);const bytes=await crypto.subtle.sign("HMAC",key,new TextEncoder().encode(payload));return btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/=/g,"").replace(/\+/g,"-").replace(/\//g,"_")}
+export async function createPreviewToken(id:string){if(!secret())throw new Error("Pré-visualização não configurada.");const payload=`${id}.${Date.now()+15*60_000}`;return`${payload}.${await signature(payload)}`}
+export async function verifyPreviewToken(token:string){const[id,expires,sig]=token.split(".");if(!id||!expires||!sig||Number(expires)<Date.now()||!secret())return null;const expected=await signature(`${id}.${expires}`);if(sig.length!==expected.length)return null;let diff=0;for(let i=0;i<sig.length;i++)diff|=sig.charCodeAt(i)^expected.charCodeAt(i);return diff===0?id:null}

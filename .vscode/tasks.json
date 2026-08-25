@@ -1,0 +1,17 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Supabase: aplicar migrations",
+      "type": "shell",
+      "command": "npm run db:push",
+      "problemMatcher": []
+    },
+    {
+      "label": "Supabase: gerar tipos TypeScript",
+      "type": "shell",
+      "command": "npm run db:types",
+      "problemMatcher": []
+    }
+  ]
+}

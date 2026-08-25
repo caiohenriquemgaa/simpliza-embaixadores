@@ -1,0 +1,3 @@
+import { requireAdmin, unauthorized } from "@/lib/admin-auth";
+import { createPreviewToken } from "@/lib/preview-token";
+export async function POST(request:Request){if(!await requireAdmin(request))return unauthorized();let id="";try{const body=await request.json() as{id?:string};id=body.id??""}catch{return Response.json({error:"Dados inválidos."},{status:400})}if(!id||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id))return Response.json({error:"ID inválido."},{status:400});try{return Response.json({url:`/preview/${await createPreviewToken(id)}`})}catch{return Response.json({error:"Pré-visualização indisponível."},{status:503})}}

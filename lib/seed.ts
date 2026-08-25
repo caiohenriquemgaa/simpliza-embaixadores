@@ -1,0 +1,45 @@
+import type { Ambassador } from "./types";
+
+const now = "2026-08-24T00:00:00.000Z";
+
+/** Conteúdo aprovado existente, usado também pela migration inicial do Supabase. */
+export const felipeSeed: Ambassador = {
+  id: "00000000-0000-4000-8000-000000000001",
+  name: "Felipe",
+  slug: "felipe",
+  shortDescription: "Embaixador Simpliza",
+  biography: "Felipe indica o Simpliza para restaurantes que querem profissionalizar a gestão.",
+  primaryPhotoUrl: "",
+  secondaryPhotoUrl: "",
+  instagramUrl: "",
+  tiktokUrl: "",
+  youtubeUrl: "",
+  whatsapp: "",
+  heroTitle: "Gestão de restaurante não precisa ser complicada.",
+  heroSubtitle: "Controle vendas, estoque, CMV, financeiro e delivery em uma operação integrada com o Simpliza.",
+  heroQuote: "Minha indicação para quem quer profissionalizar a gestão do restaurante.",
+  painTitle: "Seu restaurante vende. Mas você realmente sabe onde ganha e onde perde dinheiro?",
+  solutionTitle: "Uma operação integrada. Do pedido à gestão.",
+  testimonial: "",
+  primaryCtaText: "Quero conhecer o Simpliza",
+  primaryCtaUrl: "#contato",
+  secondaryCtaText: "Ver como funciona em 90 segundos",
+  secondaryCtaUrl: "#demonstracao",
+  campaignCode: "embaixador-felipe",
+  seoTitle: "Simpliza para Restaurantes | Indicação do Felipe",
+  seoDescription: "Controle vendas, estoque, CMV, financeiro e delivery em uma operação integrada com o sistema de gestão Simpliza.",
+  ogImageUrl: "",
+  videoUrl: "",
+  status: "published",
+  publishedAt: now,
+  createdAt: now,
+  updatedAt: now,
+  benefits: [
+    { title: "CMV no controle", body: "Clareza sobre o custo real de cada venda.", sortOrder: 0 },
+    { title: "Estoque organizado", body: "Compras e perdas apoiadas por dados confiáveis.", sortOrder: 1 },
+    { title: "Financeiro integrado", body: "Números reunidos em uma única operação.", sortOrder: 2 },
+    { title: "Pedidos centralizados", body: "Canais conectados à operação.", sortOrder: 3 },
+  ],
+  testimonials: [],
+  faqs: [],
+};
