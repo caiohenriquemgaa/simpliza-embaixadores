@@ -229,3 +229,74 @@ form input:focus,form select:focus{border-color:var(--simpliza-blue);box-shadow:
   .adminFilters{padding:10px}
   .adminFilters input,.adminFilters select{flex:1 1 100%;width:100%}
 }
+
+/* Fluxo Entradas → Simpliza → Gestão. */
+.flow{grid-template-columns:minmax(0,1fr) minmax(105px,130px) 180px minmax(105px,130px) minmax(0,1fr)}
+.flowGroup,.connector,.coreWrap{min-width:0}
+.connector{font-size:9px;line-height:1.35}
+.flowInputs>div{display:grid;grid-template-columns:repeat(4,max-content)}
+.flowGroup b{display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.whatsappEntry{border-color:color-mix(in srgb,var(--simpliza-green) 38%,var(--brand-border))!important}
+.whatsappEntry svg{width:16px;height:16px;flex:0 0 auto;color:var(--simpliza-green-dark)}
+.coreWrap{width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;margin-inline:auto}
+.core{width:min(180px,100%);height:auto;aspect-ratio:1;margin-inline:auto;flex:0 0 auto;text-align:center}
+.coreWrap>p{max-width:220px;margin:12px auto 0;color:var(--simpliza-blue-dark);font-size:11px;font-weight:700;line-height:1.4}
+
+@media(max-width:900px){
+  .flow{width:100%;grid-template-columns:minmax(0,1fr);justify-items:stretch}
+  .flowGroup,.connector,.coreWrap{width:100%;margin-inline:auto}
+  .coreWrap{grid-row:3}
+  .core{grid-row:auto}
+  .connector{height:auto;min-height:72px;justify-content:center}
+  .connector i{width:1px;height:24px;flex:0 0 24px;margin-inline:auto}
+}
+
+@media(max-width:600px){
+  .flowInputs>div{width:min(100%,300px);grid-template-columns:repeat(2,minmax(0,1fr));margin:15px auto 0}
+  .flowInputs b{width:100%;min-height:42px;padding-inline:8px}
+  .connector span{max-width:220px;line-height:1.35}
+}
+
+/* Integrações de delivery: canais convergindo para o produto Simpliza. */
+.deliverySection{overflow:clip}
+.deliverySection>.intro{max-width:720px}
+.deliveryFlow{width:min(1120px,100%);margin:58px auto 0;display:grid;grid-template-columns:250px 180px minmax(0,1fr);align-items:center}
+.deliveryPlatforms{display:grid;gap:12px;position:relative;z-index:2}
+.deliveryPlatform{height:68px;display:flex;align-items:center;justify-content:center;padding:10px 18px;border:1px solid var(--brand-border);border-radius:14px;background:var(--simpliza-white);box-shadow:0 10px 28px color-mix(in srgb,var(--simpliza-blue-dark) 7%,transparent)}
+.deliveryLogo{display:block;width:auto;max-width:180px;height:auto;max-height:46px;object-fit:contain}
+.deliveryLogo--aiqfome{max-height:52px}
+.deliveryLogo--uber-eats{max-width:174px}
+.deliveryLines{display:block;width:220px;height:420px;overflow:visible;position:relative;z-index:1}
+.deliveryLines path{fill:none;stroke:var(--simpliza-cyan);stroke-width:1.6;stroke-linecap:round;stroke-dasharray:3 7}
+.deliveryLines path:nth-child(even){stroke:color-mix(in srgb,var(--simpliza-blue) 72%,var(--simpliza-cyan))}
+.deliveryLines circle{fill:var(--simpliza-green);stroke:var(--simpliza-white);stroke-width:3}
+.deliveryMobileConnector{display:none}
+.deliveryProduct{min-width:0;position:relative;z-index:2;transform:translateX(-26px)}
+.deliveryMockup{overflow:hidden;border:1px solid var(--brand-border);border-radius:24px;background:var(--simpliza-white);box-shadow:0 28px 70px color-mix(in srgb,var(--simpliza-blue-dark) 14%,transparent)}
+.deliveryMockup img{display:block;width:100%;height:auto;object-fit:contain}
+.deliveryBadge{position:absolute;top:18px;right:18px;z-index:3;min-height:38px;display:inline-flex;align-items:center;gap:7px;padding:0 13px;border:1px solid color-mix(in srgb,var(--simpliza-green) 36%,var(--simpliza-white));border-radius:999px;background:var(--simpliza-white);color:var(--simpliza-green-dark);box-shadow:0 8px 24px color-mix(in srgb,var(--simpliza-blue-dark) 12%,transparent);font-size:11px;font-weight:800}
+.deliveryBadge svg{width:16px;height:16px;flex:0 0 auto}
+
+@media(max-width:900px){
+  .deliveryFlow{margin-top:42px;grid-template-columns:minmax(0,1fr);justify-items:center}
+  .deliveryPlatforms{width:min(560px,100%);display:flex;flex-wrap:wrap;justify-content:center;gap:9px}
+  .deliveryPlatform{height:66px;flex:0 1 calc((100% - 18px)/3);min-width:0;padding:9px 10px}
+  .deliveryPlatform:nth-child(n+4){flex-basis:calc((100% - 9px)/2)}
+  .deliveryLogo{max-width:100%;max-height:44px}
+  .deliveryLogo--aiqfome{max-height:48px}
+  .deliveryLines{display:none}
+  .deliveryMobileConnector{height:76px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .deliveryMobileConnector i{width:1px;height:58px;background:repeating-linear-gradient(to bottom,var(--simpliza-cyan) 0 3px,transparent 3px 8px)}
+  .deliveryMobileConnector span{width:11px;height:11px;margin-top:-1px;border:3px solid var(--simpliza-white);border-radius:50%;background:var(--simpliza-green);box-shadow:0 0 0 1px var(--simpliza-green)}
+  .deliveryProduct{width:100%;transform:none}
+}
+
+@media(max-width:600px){
+  .deliveryFlow{margin-top:34px}
+  .deliveryPlatforms{width:100%}
+  .deliveryPlatform{height:62px;border-radius:12px;padding:8px}
+  .deliveryLogo{max-height:39px}
+  .deliveryLogo--aiqfome{max-height:44px}
+  .deliveryMockup{border-radius:16px}
+  .deliveryBadge{top:10px;right:10px;min-height:34px;padding-inline:10px;font-size:10px}
+}
