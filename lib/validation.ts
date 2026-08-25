@@ -25,9 +25,15 @@ export const leadSchema = z.object({
   establishment: z.string().trim().min(2).max(160),
   city: z.string().trim().max(120).optional(),
   ambassadorId: z.string().uuid(),
+  ambassadorName: z.string().trim().min(2).max(120),
+  ambassadorSlug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+  campaignCode: z.string().max(120).optional(),
   sourcePage: z.string().startsWith("/").max(500).refine((value) => !value.startsWith("//")),
+  sourceUrl: z.string().url().max(2048).refine(isHttpUrl),
   monthlyRevenue: z.string().max(80).optional(),
+  contactPreference: z.enum(["whatsapp", "phone", "email"]),
   consentLgpd: z.literal(true),
+  submittedAt: z.string().datetime({ offset: true }),
   utmSource: z.string().max(200).optional(),
   utmMedium: z.string().max(200).optional(),
   utmCampaign: z.string().max(200).optional(),
@@ -36,6 +42,8 @@ export const leadSchema = z.object({
   website: z.string().max(0).optional(),
   formStartedAt: z.number().int().positive(),
 });
+
+export const idempotencyKeySchema = z.string().uuid();
 
 const ordered = z.object({
   id: z.string().uuid().optional(),
