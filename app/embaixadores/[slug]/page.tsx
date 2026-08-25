@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { LandingTemplate } from "@/app/components/landing-template";
 import { getPublishedAmbassador, getPublishedSlugs } from "@/lib/ambassadors";
 import { getPublicSiteUrl } from "@/lib/env";
+export const dynamic = "force-dynamic";
 type Props={params:Promise<{slug:string}>};
 export async function generateStaticParams(){return(await getPublishedSlugs()).map(({slug})=>({slug}))}
 export async function generateMetadata({params}:Props):Promise<Metadata>{const{slug}=await params,a=await getPublishedAmbassador(slug);if(!a)return{};const path=`/embaixadores/${a.slug}`;return{title:{absolute:a.seoTitle},description:a.seoDescription,alternates:{canonical:path},openGraph:{title:a.seoTitle,description:a.seoDescription,type:"website",locale:"pt_BR",url:path,images:a.ogImageUrl?[{url:a.ogImageUrl}]:undefined},twitter:{card:"summary_large_image",title:a.seoTitle,description:a.seoDescription,images:a.ogImageUrl?[a.ogImageUrl]:undefined}}}
