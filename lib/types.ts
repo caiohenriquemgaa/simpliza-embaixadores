@@ -68,7 +68,8 @@ export type LeadInput = {
   city?: string;
   ambassadorId: string;
   sourcePage: string;
-  monthlyRevenue?: string;
+  monthlyRevenue: string;
+  contactPreference: "whatsapp" | "phone_call";
   consentLgpd: true;
   utmSource?: string;
   utmMedium?: string;
