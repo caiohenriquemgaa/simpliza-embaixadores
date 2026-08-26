@@ -77,52 +77,12 @@ form input:focus,form select:focus{border-color:var(--simpliza-blue);box-shadow:
 
 @media(max-width:600px){.brand{width:108px;min-height:44px}.brandLogo{width:108px;height:38px}}
 
-/* Simulador de planos — substitui a antiga seção de vídeo. */
-.planSection{background:var(--simpliza-background)}
-.planIntro{max-width:760px;margin:0 auto;text-align:center}
-.planIntro .eyebrow{justify-content:center}
-.planIntro h2{font-family:var(--font-roboto-slab),'Roboto Slab',Georgia,serif;font-size:clamp(36px,4vw,54px);line-height:1.05;letter-spacing:-2.4px;margin:20px 0;color:var(--simpliza-blue-dark)}
-.planIntro>p{margin:0;color:var(--muted);font-size:17px;line-height:1.55}
-.billingSwitch{width:max-content;display:flex;margin:30px auto 26px;padding:4px;border-radius:999px;background:#edf1f4}
-.billingSwitch button{position:relative;min-width:102px;height:44px;border:0;border-radius:999px;background:transparent;color:var(--muted);font-weight:800;cursor:pointer}
-.billingSwitch button.active{background:var(--simpliza-green);color:white;box-shadow:0 7px 18px #16a74a2c}
-.billingSwitch small{position:absolute;top:-14px;right:-22px;padding:3px 7px;border-radius:999px;background:#ffbd00;color:#17212b;font-size:9px;white-space:nowrap}
-.planSimulator{width:min(800px,100%);margin:0 auto;padding:28px 18px 18px;border:1px solid var(--brand-border);border-radius:22px;background:#f2f5f7;box-shadow:0 22px 55px var(--brand-shadow)}
-.planSimulator>label{display:block;margin-bottom:17px;text-align:center;color:var(--simpliza-blue-dark);font-size:13px;font-weight:800}
-.planSimulator>input[type="range"]{width:100%;height:8px;margin:0;accent-color:var(--simpliza-green);cursor:pointer}
-.revenueMarks{display:grid;grid-template-columns:repeat(5,1fr);margin:12px -8px 34px}
-.revenueMarks button{border:0;background:transparent;color:#60768c;font-size:12px;cursor:pointer}
-.revenueMarks button:first-child{text-align:left}.revenueMarks button:last-child{text-align:right}
-.revenueMarks button.active{color:var(--simpliza-green-dark);font-weight:900}
-.planCard{min-height:490px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:42px 28px;border:1px solid #e9eef0;border-radius:18px;background:white;text-align:center;box-shadow:0 2px 5px #00344f12}
-.planCard h3{margin:8px 0 10px;color:var(--simpliza-green);font-size:25px}
-.planCard>p:not(.planWarning):not(.planTerms){max-width:430px;margin:0;color:#60768c;line-height:1.55}
-.planWarning{width:min(100%,670px);margin:0 0 14px;padding:11px;border:1px solid #ed9198;border-radius:9px;background:#fbd7da;color:#d82d3b;font-weight:800}
-.planPrice{min-width:350px;display:grid;grid-template-columns:auto auto;justify-content:center;align-items:end;margin:26px 0 22px;padding:20px 28px;border-radius:16px;background:#f6f7f8}
-.planPrice strong{font-size:52px;line-height:1;color:#20252a;letter-spacing:-2px}
-.planPrice>span{margin:0 0 5px 5px;color:#60768c}
-.planPrice small,.planPrice b{grid-column:1/-1;margin-top:12px}
-.planPrice small{font-weight:750}.planPrice b{width:max-content;margin:10px auto 0;padding:7px 14px;border-radius:999px;background:var(--simpliza-green-dark);color:white;font-size:12px}
-.planDetails,.planCta{display:flex;align-items:center;justify-content:center;min-height:46px;border-radius:999px;font-size:14px;font-weight:850}
-.planDetails{padding:0 25px;background:#087eff;color:white;box-shadow:0 8px 18px #087eff34}
-.planTerms{margin:24px 0 0!important;color:#60768c!important;font-size:12px}
-.planCta{margin-top:16px;border-radius:10px;background:#20d36e;color:#063b27}
 .contactPreference{display:flex;gap:10px;margin:0 0 14px;padding:0;border:0}
 .contactPreference legend{margin-bottom:8px;font-size:11px;font-weight:800}
 .contactPreference label{flex:1;display:flex!important;align-items:center;gap:8px!important;min-height:44px;margin:0!important;padding:0 12px;border:1px solid var(--line);border-radius:10px;cursor:pointer}
 .contactPreference input{width:16px;height:16px;padding:0;accent-color:var(--simpliza-green-dark)}
 
 @media(max-width:600px){
-  .planSection{padding-left:14px;padding-right:14px}
-  .planIntro h2{font-size:36px;letter-spacing:-1.8px}
-  .billingSwitch{margin-top:26px}
-  .planSimulator{padding:22px 10px 10px;border-radius:16px}
-  .revenueMarks{margin:10px -4px 24px}
-  .revenueMarks button{padding:0 2px;font-size:9px}
-  .planCard{min-height:460px;padding:32px 14px}
-  .planPrice{min-width:0;width:100%;padding:18px 12px}
-  .planPrice strong{font-size:46px}
-  .planDetails{width:100%;padding:0 12px;font-size:12px}
   .contactPreference{display:grid;grid-template-columns:1fr 1fr}
   .contactPreference legend{grid-column:1/-1}
 }
