@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { getPublicSupabaseConfig, isUsableEnvValue } from "./env";
+import { getPublicSupabaseConfig, isUsableEnvValue } from "./env.ts";
 
 export function isSupabaseConfigured() {
   return Boolean(getPublicSupabaseConfig());

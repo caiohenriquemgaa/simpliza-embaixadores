@@ -25,10 +25,15 @@ export const leadSchema = z.object({
   establishment: z.string().trim().min(2).max(160),
   city: z.string().trim().max(120).optional(),
   ambassadorId: z.string().uuid(),
+  ambassadorName: z.string().trim().min(2).max(120),
+  ambassadorSlug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+  campaignCode: z.string().max(120).optional(),
   sourcePage: z.string().startsWith("/").max(500).refine((value) => !value.startsWith("//")),
-  monthlyRevenue: z.enum(["Até R$ 20 mil", "De R$ 20 mil a R$ 40 mil", "De R$ 40 mil a R$ 70 mil", "De R$ 70 mil a R$ 200 mil", "De R$ 200 mil a R$ 500 mil", "Acima de R$ 500 mil"]),
-  contactPreference: z.enum(["whatsapp", "phone_call"]),
+  sourceUrl: z.string().url().max(2048).refine(isHttpUrl),
+  monthlyRevenue: z.enum(["Até R$ 20 mil", "De R$ 20 mil a R$ 40 mil", "De R$ 40 mil a R$ 70 mil", "De R$ 70 mil a R$ 200 mil", "De R$ 200 mil a R$ 500 mil", "Acima de R$ 500 mil", "Até R$ 30 mil", "R$ 30 a 80 mil", "R$ 80 a 200 mil", "Acima de R$ 200 mil"]),
+  contactPreference: z.enum(["whatsapp", "phone_call", "phone", "email"]),
   consentLgpd: z.literal(true),
+  submittedAt: z.string().datetime({ offset: true }),
   utmSource: z.string().max(200).optional(),
   utmMedium: z.string().max(200).optional(),
   utmCampaign: z.string().max(200).optional(),
@@ -37,6 +42,8 @@ export const leadSchema = z.object({
   website: z.string().max(0).optional(),
   formStartedAt: z.number().int().positive(),
 });
+
+export const idempotencyKeySchema = z.string().uuid();
 
 const ordered = z.object({
   id: z.string().uuid().optional(),

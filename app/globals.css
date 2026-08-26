@@ -261,6 +261,7 @@ form input:focus,form select:focus{border-color:var(--simpliza-blue);box-shadow:
 .status-published{background:var(--simpliza-green-light);color:var(--simpliza-green-dark)}
 .status-draft{background:#fff5d6;color:#755600}
 .status-archived{background:#eceff2;color:#50565c}
+.status-pending{background:#fff5d6;color:#755600}.status-processing{background:#e8f3ff;color:#174f80}.status-synced{background:var(--simpliza-green-light);color:var(--simpliza-green-dark)}.status-failed{background:#fff0f2;color:#9f1d2d}.leadTable{min-width:1050px}.leadTable td small{display:block;margin-top:5px;color:var(--muted);line-height:1.4}.leadTable td>button{min-height:36px;border:1px solid var(--line);border-radius:8px;padding:0 10px;background:white;color:var(--simpliza-blue-dark);font-weight:700;cursor:pointer}
 .adminForm{margin-top:24px}
 .adminForm input,.adminForm textarea,.adminForm select{width:100%;color:var(--ink);background:var(--simpliza-white)}
 .adminForm input:focus,.adminForm textarea:focus,.adminForm select:focus,.adminFilters input:focus,.adminFilters select:focus{outline:3px solid color-mix(in srgb,var(--simpliza-cyan) 45%,transparent);outline-offset:1px;border-color:var(--simpliza-blue)}

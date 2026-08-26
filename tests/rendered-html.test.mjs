@@ -19,6 +19,7 @@ test("renders the public landing content in the initial HTML", async () => {
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
   assert.match(html, /<h1>Gestão de restaurante não precisa ser complicada\.<\/h1>/);
   assert.match(html, /Fale com um especialista/);
+  assert.match(html, /Prefere contato por/);
 });
 
 test("renders an ambassador route with individual SEO metadata", async () => {

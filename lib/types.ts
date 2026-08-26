@@ -67,10 +67,15 @@ export type LeadInput = {
   establishment: string;
   city?: string;
   ambassadorId: string;
+  ambassadorName: string;
+  ambassadorSlug: string;
+  campaignCode?: string;
   sourcePage: string;
+  sourceUrl: string;
   monthlyRevenue: string;
-  contactPreference: "whatsapp" | "phone_call";
+  contactPreference: "whatsapp" | "phone_call" | "phone" | "email";
   consentLgpd: true;
+  submittedAt: string;
   utmSource?: string;
   utmMedium?: string;
   utmCampaign?: string;
