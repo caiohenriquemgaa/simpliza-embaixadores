@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { getPublishedAmbassador } from "@/lib/ambassadors";
 import { LandingTemplate } from "./components/landing-template";
 
+export const dynamic = "force-dynamic";
+
 export async function generateMetadata(): Promise<Metadata> {
   const ambassador = await getPublishedAmbassador("felipe");
   if (!ambassador) return {};
