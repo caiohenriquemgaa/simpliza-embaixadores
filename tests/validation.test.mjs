@@ -46,6 +46,7 @@ test("requires an approved revenue range and contact preference", () => {
   };
   assert.equal(leadSchema.safeParse(baseLead).success, false);
   assert.equal(leadSchema.safeParse({ ...baseLead, monthlyRevenue: "Até R$ 20 mil", contactPreference: "whatsapp" }).success, true);
+  assert.equal(leadSchema.safeParse({ ...baseLead, monthlyRevenue: "Até R$ 20 mil", contactPreference: "phone" }).success, false);
   assert.equal(leadSchema.safeParse({ ...baseLead, monthlyRevenue: "Prefiro não informar", contactPreference: "email" }).success, false);
 });
 

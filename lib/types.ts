@@ -73,7 +73,7 @@ export type LeadInput = {
   sourcePage: string;
   sourceUrl: string;
   monthlyRevenue: string;
-  contactPreference: "whatsapp" | "phone_call" | "phone" | "email";
+  contactPreference: "whatsapp" | "phone_call" | "email";
   consentLgpd: true;
   submittedAt: string;
   utmSource?: string;

@@ -31,7 +31,7 @@ export const leadSchema = z.object({
   sourcePage: z.string().startsWith("/").max(500).refine((value) => !value.startsWith("//")),
   sourceUrl: z.string().url().max(2048).refine(isHttpUrl),
   monthlyRevenue: z.enum(["Até R$ 20 mil", "De R$ 20 mil a R$ 40 mil", "De R$ 40 mil a R$ 70 mil", "De R$ 70 mil a R$ 200 mil", "De R$ 200 mil a R$ 500 mil", "Acima de R$ 500 mil", "Até R$ 30 mil", "R$ 30 a 80 mil", "R$ 80 a 200 mil", "Acima de R$ 200 mil"]),
-  contactPreference: z.enum(["whatsapp", "phone_call", "phone", "email"]),
+  contactPreference: z.enum(["whatsapp", "phone_call", "email"]),
   consentLgpd: z.literal(true),
   submittedAt: z.string().datetime({ offset: true }),
   utmSource: z.string().max(200).optional(),

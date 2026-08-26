@@ -1,11 +1,11 @@
 do $$ begin
-  create type public.crm_sync_status as enum ('pending', 'processing', 'synced', 'failed');
+  create type public.crm_sync_status as enum ('pending', 'processing', 'synced', 'failed', 'ignored');
 exception
   when duplicate_object then null;
 end $$;
 
 alter table public.leads
-  add column if not exists crm_status public.crm_sync_status not null default 'pending',
+  add column if not exists crm_status public.crm_sync_status,
   add column if not exists datacrazy_lead_id text,
   add column if not exists datacrazy_business_id text,
   add column if not exists crm_attempts integer not null default 0 check (crm_attempts >= 0),
@@ -23,6 +23,11 @@ alter table public.leads
   add column if not exists contact_preference text,
   add column if not exists consent_at timestamptz;
 
+-- Registros anteriores à integração não devem ser enviados ao Data Crazy.
+update public.leads
+set crm_status = 'ignored'
+where crm_status is null;
+
 update public.leads l
 set ambassador_slug = coalesce(l.ambassador_slug, a.slug),
     ambassador_name = coalesce(l.ambassador_name, a.name),
@@ -35,6 +40,8 @@ where a.id = l.ambassador_id
     or l.crm_external_id is null or l.consent_at is null);
 
 alter table public.leads
+  alter column crm_status set default 'pending',
+  alter column crm_status set not null,
   alter column crm_external_id set not null,
   alter column consent_at set default now(),
   alter column consent_at set not null;

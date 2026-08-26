@@ -7,12 +7,12 @@ import { adminFetch } from "@/lib/supabase-browser";
 
 type LeadRow = {
   id: string; name: string; establishment: string; ambassador_name?: string; ambassador_slug?: string;
-  crm_status: "pending" | "processing" | "synced" | "failed"; crm_attempts: number;
+  crm_status: "pending" | "processing" | "synced" | "failed" | "ignored"; crm_attempts: number;
   datacrazy_lead_id?: string; datacrazy_business_id?: string; crm_last_attempt_at?: string;
   crm_last_error?: string; crm_next_retry_at?: string; created_at: string;
 };
 
-const labels = { pending: "Pendente", processing: "Processando", synced: "Sincronizado", failed: "Falhou" };
+const labels = { pending: "Pendente", processing: "Processando", synced: "Sincronizado", failed: "Falhou", ignored: "Ignorado" };
 
 export function LeadIntegrationList() {
   const [items, setItems] = useState<LeadRow[]>([]);
