@@ -20,6 +20,9 @@ test("renders the public landing content in the initial HTML", async () => {
   assert.match(html, /<h1>Gestão de restaurante não precisa ser complicada\.<\/h1>/);
   assert.match(html, /Fale com um especialista/);
   assert.match(html, /Prefere contato por/);
+  assert.match(html, /Simule o plano ideal para o seu restaurante/);
+  assert.match(html, /class="[^"]*planSimulator[^"]*"/);
+  assert.match(html, /type="range"[^>]*aria-valuetext="R\$ 40 mil"/);
 });
 
 test("renders an ambassador route with individual SEO metadata", async () => {
