@@ -2,6 +2,7 @@
 
 import { FormEvent, useRef, useState } from "react";
 import { readJsonResponse } from "@/lib/http";
+import { maskBrazilianPhone } from "@/lib/phone";
 import { Icon } from "./brand-icon";
 
 declare global {
@@ -9,14 +10,6 @@ declare global {
     dataLayer?: Record<string, unknown>[];
     fbq?: (action: string, event: string, data?: Record<string, unknown>) => void;
   }
-}
-
-function maskPhone(value: string) {
-  const digits = value.replace(/\D/g, "").slice(0, 11);
-  if (digits.length <= 2) return digits ? `(${digits}` : "";
-  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
-  if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
-  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
 }
 
 type Props = { ambassadorId: string; ambassadorName: string; ambassadorSlug: string; campaignCode: string };
@@ -67,12 +60,12 @@ export function LeadForm({ ambassadorId, ambassadorName, ambassadorSlug, campaig
     }
   }
 
-  if (status === "sent") return <form><div className="success" role="status"><span><Icon name="check" /></span><h3>Interesse registrado!</h3><p>Recebemos seus dados. Um especialista da Simpliza entrará em contato.</p><button type="button" onClick={() => setStatus("idle")}>Enviar outro contato</button></div></form>;
+  if (status === "sent") return <form><div className="success" role="status"><span><Icon name="check" /></span><h3>Interesse registrado!</h3><p>Recebemos seus dados. Um especialista do Simpliza entrará em contato.</p><button type="button" onClick={() => setStatus("idle")}>Enviar outro contato</button></div></form>;
 
   return <form onSubmit={submit} aria-busy={status === "sending"}>
     <div className="formHead"><b>Fale com um especialista</b><small>Preencha em menos de 1 minuto</small></div>
     <label>Nome<input name="name" required minLength={2} autoComplete="name" placeholder="Como podemos te chamar?" /></label>
-    <label>Telefone / WhatsApp<input name="phone" required inputMode="tel" autoComplete="tel" value={phone} onChange={(event) => setPhone(maskPhone(event.target.value))} pattern="\(\d{2}\) \d{4,5}-\d{4}" placeholder="(00) 00000-0000" /></label>
+    <label>Telefone / WhatsApp<input name="phone" required inputMode="tel" autoComplete="tel" value={phone} onChange={(event) => setPhone(maskBrazilianPhone(event.target.value))} pattern="\(\d{2}\) \d{4,5}-\d{4}" placeholder="(00) 00000-0000" /></label>
     <label>Nome do restaurante<input name="establishment" required minLength={2} autoComplete="organization" placeholder="Nome do seu negócio" /></label>
     <div className="formRow"><label>E-mail<input name="email" type="email" autoComplete="email" placeholder="voce@email.com" /></label><label>Cidade<input name="city" autoComplete="address-level2" placeholder="Sua cidade" /></label></div>
     <div className="formRow"><label>Faturamento mensal<select name="monthlyRevenue" required defaultValue=""><option value="" disabled>Selecione uma faixa</option><option>Até R$ 20 mil</option><option>De R$ 20 mil a R$ 40 mil</option><option>De R$ 40 mil a R$ 70 mil</option><option>De R$ 70 mil a R$ 200 mil</option><option>De R$ 200 mil a R$ 500 mil</option><option>Acima de R$ 500 mil</option></select></label><label>Prefere contato por<select name="contactPreference" required defaultValue="whatsapp"><option value="whatsapp">WhatsApp</option><option value="phone_call">Ligação</option><option value="email">E-mail</option></select></label></div>
