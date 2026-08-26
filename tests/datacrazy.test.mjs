@@ -3,6 +3,7 @@ import test from "node:test";
 import { DatacrazyClient, DatacrazyError } from "../lib/datacrazy/client.ts";
 import { assertDatacrazyReady } from "../lib/datacrazy/config.ts";
 import { normalizeBrazilianPhone, retryDelaySeconds, syncLeadRecord } from "../lib/datacrazy/sync.ts";
+import { isLeadSearchResult, isPaginated } from "../lib/datacrazy/types.ts";
 
 const baseLead = {
   id: "4e4a6bd1-c4a9-4e9d-bb8f-08144f87aa10",
@@ -102,6 +103,35 @@ test("uses documented lead search parameters", async () => {
   await client.searchLeads("phone", "+5511999999999");
   assert.match(requestedUrl, /searchType=phone/);
   assert.match(requestedUrl, /search=%2B5511999999999/);
+});
+
+test("accepts lead search responses with optional count and rejects malformed roots", () => {
+  const lead = { id: "dc-lead-1" };
+  const cases = [
+    [{ count: 1, data: [lead] }, true],
+    [{ data: [lead] }, true],
+    [{ data: [] }, true],
+    [{ count: 1 }, false],
+    [{ data: {} }, false],
+    [[lead], false],
+    [null, false],
+  ];
+
+  for (const [value, expected] of cases) {
+    assert.equal(isLeadSearchResult(value), expected);
+  }
+  assert.equal(isPaginated({ data: [lead] }), false);
+});
+
+test("searches leads when Data Crazy omits count", async () => {
+  const lead = { id: "dc-lead-1", rawPhone: "5511999999999" };
+  const client = new DatacrazyClient({
+    apiUrl: "https://api.example.test/api/v1",
+    token: "secret",
+    fetchImpl: async () => Response.json({ data: [lead] }),
+  });
+
+  assert.deepEqual(await client.searchLeads("phone", "+5511999999999"), [lead]);
 });
 
 test("logs only sanitized metadata for an unexpected leads response", async () => {

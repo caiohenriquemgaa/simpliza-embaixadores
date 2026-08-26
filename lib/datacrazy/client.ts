@@ -1,5 +1,5 @@
 import type { BusinessPayload, DatacrazyBusiness, DatacrazyLead, LeadPayload, Paginated } from "./types.ts";
-import { hasStringId, isObject, isPaginated } from "./types.ts";
+import { hasStringId, isLeadSearchResult, isObject, isPaginated } from "./types.ts";
 
 export class DatacrazyError extends Error {
   readonly options: { status?: number; retryable: boolean; retryAfterSeconds?: number };
@@ -97,7 +97,7 @@ export class DatacrazyClient {
   async searchLeads(searchType: "phone" | "email", search: string): Promise<DatacrazyLead[]> {
     const params = new URLSearchParams({ searchType, search, take: "10" });
     const response = await this.requestWithMetadata(`/leads?${params}`);
-    if (!isPaginated<DatacrazyLead>(response.body)) {
+    if (!isLeadSearchResult<DatacrazyLead>(response.body)) {
       const root = isObject(response.body) ? response.body : null;
       const rootKeys = root ? Object.keys(root) : [];
       console.warn("[datacrazy] unexpected_leads_shape", {

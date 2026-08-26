@@ -35,6 +35,7 @@ export type BusinessPayload = {
 };
 
 export type Paginated<T> = { count: number; data: T[] };
+export type LeadSearchResult<T> = { count?: number; data: T[] };
 
 export function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -46,4 +47,10 @@ export function hasStringId(value: unknown): value is { id: string } {
 
 export function isPaginated<T>(value: unknown): value is Paginated<T> {
   return isObject(value) && typeof value.count === "number" && Array.isArray(value.data);
+}
+
+export function isLeadSearchResult<T>(value: unknown): value is LeadSearchResult<T> {
+  return isObject(value)
+    && Array.isArray(value.data)
+    && (!Object.hasOwn(value, "count") || typeof value.count === "number");
 }
