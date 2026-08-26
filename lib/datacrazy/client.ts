@@ -1,5 +1,5 @@
 import type { BusinessPayload, DatacrazyBusiness, DatacrazyLead, LeadPayload, Paginated } from "./types.ts";
-import { hasStringId, isPaginated } from "./types.ts";
+import { hasStringId, isObject, isPaginated } from "./types.ts";
 
 export class DatacrazyError extends Error {
   readonly options: { status?: number; retryable: boolean; retryAfterSeconds?: number };
@@ -16,6 +16,12 @@ type ClientOptions = {
   token: string;
   timeoutMs?: number;
   fetchImpl?: typeof fetch;
+};
+
+type ResponseResult = {
+  body: unknown;
+  status: number;
+  contentType: string | null;
 };
 
 function retryAfterSeconds(value: string | null) {
@@ -39,7 +45,7 @@ export class DatacrazyClient {
     this.fetchImpl = fetchImpl;
   }
 
-  private async request(path: string, init: RequestInit = {}, allowEmpty = false): Promise<unknown> {
+  private async requestWithMetadata(path: string, init: RequestInit = {}, allowEmpty = false): Promise<ResponseResult> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
     try {
@@ -62,10 +68,16 @@ export class DatacrazyClient {
         });
       }
       if (!text.trim()) {
-        if (allowEmpty) return null;
+        if (allowEmpty) return { body: null, status: response.status, contentType: response.headers.get("content-type") };
         throw new DatacrazyError("DataCrazy retornou uma resposta vazia inesperada.", { retryable: true });
       }
-      try { return JSON.parse(text); }
+      try {
+        return {
+          body: JSON.parse(text),
+          status: response.status,
+          contentType: response.headers.get("content-type"),
+        };
+      }
       catch { throw new DatacrazyError("DataCrazy retornou JSON inválido.", { retryable: true }); }
     } catch (error) {
       if (error instanceof DatacrazyError) throw error;
@@ -78,11 +90,30 @@ export class DatacrazyClient {
     }
   }
 
+  private async request(path: string, init: RequestInit = {}, allowEmpty = false): Promise<unknown> {
+    return (await this.requestWithMetadata(path, init, allowEmpty)).body;
+  }
+
   async searchLeads(searchType: "phone" | "email", search: string): Promise<DatacrazyLead[]> {
     const params = new URLSearchParams({ searchType, search, take: "10" });
-    const result = await this.request(`/leads?${params}`);
-    if (!isPaginated<DatacrazyLead>(result)) throw new DatacrazyError("Resposta inválida ao buscar leads.", { retryable: true });
-    return result.data.filter(hasStringId) as DatacrazyLead[];
+    const response = await this.requestWithMetadata(`/leads?${params}`);
+    if (!isPaginated<DatacrazyLead>(response.body)) {
+      const root = isObject(response.body) ? response.body : null;
+      const rootKeys = root ? Object.keys(root) : [];
+      console.warn("[datacrazy] unexpected_leads_shape", {
+        status: response.status,
+        contentType: response.contentType,
+        rootType: Array.isArray(response.body) ? "array" : isObject(response.body) ? "object" : response.body === null ? "null" : typeof response.body,
+        rootKeys,
+        countType: root ? typeof root.count : "undefined",
+        dataExists: root !== null && Object.hasOwn(root, "data"),
+        dataIsArray: root !== null && Array.isArray(root.data),
+        arrayKeys: root ? rootKeys.filter((key) => key !== "data" && Array.isArray(root[key])) : [],
+        endpoint: "GET /leads",
+      });
+      throw new DatacrazyError("Resposta inválida ao buscar leads.", { retryable: true });
+    }
+    return response.body.data.filter(hasStringId) as DatacrazyLead[];
   }
 
   async createLead(payload: LeadPayload) {

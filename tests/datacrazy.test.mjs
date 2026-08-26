@@ -104,6 +104,47 @@ test("uses documented lead search parameters", async () => {
   assert.match(requestedUrl, /search=%2B5511999999999/);
 });
 
+test("logs only sanitized metadata for an unexpected leads response", async () => {
+  const phone = "+5511998765432";
+  const email = "private@example.test";
+  const token = "super-secret-token";
+  const warnings = [];
+  const originalWarn = console.warn;
+  console.warn = (...args) => warnings.push(args);
+
+  try {
+    const client = new DatacrazyClient({
+      apiUrl: "https://api.example.test/api/v1",
+      token,
+      fetchImpl: async () => Response.json({
+        items: [{ phone, email, authorization: `Bearer ${token}` }],
+        total: 1,
+      }, { status: 200, headers: { "content-type": "application/json; charset=utf-8" } }),
+    });
+
+    await assert.rejects(() => client.searchLeads("phone", phone), /Resposta inválida ao buscar leads/);
+  } finally {
+    console.warn = originalWarn;
+  }
+
+  assert.deepEqual(warnings, [["[datacrazy] unexpected_leads_shape", {
+    status: 200,
+    contentType: "application/json; charset=utf-8",
+    rootType: "object",
+    rootKeys: ["items", "total"],
+    countType: "undefined",
+    dataExists: false,
+    dataIsArray: false,
+    arrayKeys: ["items"],
+    endpoint: "GET /leads",
+  }]]);
+  const serializedLog = JSON.stringify(warnings);
+  assert.doesNotMatch(serializedLog, new RegExp(phone.replace("+", "\\+")));
+  assert.doesNotMatch(serializedLog, new RegExp(email));
+  assert.doesNotMatch(serializedLog, new RegExp(token));
+  assert.doesNotMatch(serializedLog, /authorization|bearer|search=/i);
+});
+
 test("surfaces 429 and respects Retry-After", async () => {
   const client = new DatacrazyClient({ apiUrl: "https://api.example.test/api/v1", token: "secret", fetchImpl: async () => new Response('{"message":"Too many requests"}', { status: 429, headers: { "Retry-After": "30" } }) });
   await assert.rejects(() => client.searchLeads("phone", "+5511999999999"), (error) => {
