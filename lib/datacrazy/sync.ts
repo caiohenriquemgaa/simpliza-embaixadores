@@ -292,13 +292,14 @@ export async function processNextLead(leadId?: string, serviceClient?: SupabaseC
     const retryAfter = error instanceof DatacrazyError ? error.options.retryAfterSeconds : undefined;
     const delay = retryDelaySeconds(lead.crm_attempts, retryAfter);
     const nextRetry = new Date(Date.now() + delay * 1000).toISOString();
+    const safeError = sanitizedError(error);
     await db.from("leads").update({
       crm_status: "failed",
-      crm_last_error: sanitizedError(error),
+      crm_last_error: safeError,
       crm_next_retry_at: nextRetry,
     }).eq("id", lead.id).eq("crm_status", "processing");
     console.warn("[datacrazy] Sincronização adiada.", { leadId: lead.id, attempt: lead.crm_attempts, nextRetry });
-    return { status: "failed" as const, leadId: lead.id, nextRetry };
+    return { status: "failed" as const, leadId: lead.id, error: safeError, nextRetry };
   }
 }
 
