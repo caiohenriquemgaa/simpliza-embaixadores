@@ -4,6 +4,19 @@ export type DatacrazyLead = {
   phone?: string;
   rawPhone?: string;
   email?: string;
+  tags?: DatacrazyTag | DatacrazyTag[] | { id?: string | string[] };
+};
+
+export type DatacrazyTag = {
+  id: string;
+  name: string;
+};
+
+export type DatacrazyAdditionalField = {
+  id: string;
+  name: string;
+  entity?: string;
+  type?: string;
 };
 
 export type DatacrazyBusiness = {
@@ -21,7 +34,7 @@ export type LeadPayload = {
   phone: string;
   email?: string;
   company: string;
-  source: "Programa de Embaixadores";
+  source: string;
   address?: { city: string; country: "BR" };
   sourceReferral?: { sourceUrl: string };
   tags?: Array<{ id: string[] }>;
@@ -32,6 +45,7 @@ export type BusinessPayload = {
   stageId: string;
   attendantId?: string;
   externalId: string;
+  title: string;
 };
 
 export type Paginated<T> = { count: number; data: T[] };
