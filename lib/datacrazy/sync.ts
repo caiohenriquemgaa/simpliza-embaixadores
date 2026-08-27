@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServiceSupabaseClient } from "../supabase.ts";
 import { assertDatacrazyReady, getDatacrazyConfig } from "./config.ts";
 import { DatacrazyClient, DatacrazyError } from "./client.ts";
-import type { DatacrazyBusiness, DatacrazyLead, LeadPayload } from "./types.ts";
+import type { DatacrazyAdditionalField, DatacrazyBusiness, DatacrazyLead, DatacrazyTag, LeadPayload } from "./types.ts";
 import { hasStringId } from "./types.ts";
 
 export type CrmLeadRecord = {
@@ -36,11 +36,24 @@ export type CrmLeadRecord = {
 
 type SyncDependencies = {
   client: DatacrazyClient;
-  tagId?: string;
   stageId: string;
   attendantId?: string;
   findRecentBusiness?: (lead: CrmLeadRecord) => Promise<string | null>;
 };
+
+const GENERAL_TAG = "LP Embaixadores";
+const BUSINESS_FIELD_NAMES = [
+  "Faturamento Mensal",
+  "Preferência de contato - Embaixadores",
+  "Embaixador de origem",
+  "URL da LP de origem",
+] as const;
+
+type BusinessFieldName = (typeof BUSINESS_FIELD_NAMES)[number];
+
+export function normalizeDatacrazyName(value: string) {
+  return value.normalize("NFD").replace(/\p{M}/gu, "").trim().replace(/\s+/g, " ").toLocaleLowerCase("pt-BR");
+}
 
 export function normalizeBrazilianPhone(value: string) {
   let digits = value.replace(/\D/g, "");
@@ -57,29 +70,101 @@ function exactLead(matches: DatacrazyLead[], phone: string, email?: string | nul
     ?? (email ? matches.find((lead) => lead.email?.toLowerCase() === email.toLowerCase()) : undefined);
 }
 
-function leadPayload(lead: CrmLeadRecord, phone: string, tagId?: string): LeadPayload {
+function ambassadorLabel(lead: CrmLeadRecord) {
+  const name = lead.ambassador_name?.trim();
+  if (!name) throw new DatacrazyError("Nome público do embaixador ausente no lead.", { retryable: true });
+  return lead.ambassador_slug === "felipe" ? "Felipe" : name;
+}
+
+function namedId<T extends { id: string; name: string }>(items: T[], expectedName: string, kind: string) {
+  const normalized = normalizeDatacrazyName(expectedName);
+  const matches = items.filter((item) => normalizeDatacrazyName(item.name) === normalized);
+  if (matches.length === 0) {
+    throw new DatacrazyError(`${kind} obrigatório não encontrado: ${expectedName}.`, { retryable: true });
+  }
+  if (matches.length > 1) {
+    throw new DatacrazyError(`${kind} obrigatório duplicado: ${expectedName}.`, { retryable: true });
+  }
+  return matches[0].id;
+}
+
+function tagIds(tags: DatacrazyLead["tags"]) {
+  const values = Array.isArray(tags) ? tags : tags ? [tags] : [];
+  return values.flatMap((tag) => {
+    if (typeof tag.id === "string") return [tag.id];
+    return Array.isArray(tag.id) ? tag.id.filter((id): id is string => typeof id === "string" && id.length > 0) : [];
+  });
+}
+
+function contactPreferenceLabel(value?: string | null) {
+  if (value === "whatsapp") return "WhatsApp";
+  if (value === "phone_call") return "Ligação";
+  if (value === "email") return "E-mail";
+  throw new DatacrazyError("Preferência de contato ausente ou inválida no lead.", { retryable: true });
+}
+
+function requiredBusinessValues(lead: CrmLeadRecord, ambassador: string): Record<BusinessFieldName, string> {
+  const monthlyRevenue = lead.monthly_revenue?.trim();
+  const sourceUrl = lead.source_url?.trim();
+  if (!monthlyRevenue) throw new DatacrazyError("Faturamento mensal ausente no lead.", { retryable: true });
+  if (!sourceUrl) throw new DatacrazyError("URL da LP de origem ausente no lead.", { retryable: true });
+  return {
+    "Faturamento Mensal": monthlyRevenue,
+    "Preferência de contato - Embaixadores": contactPreferenceLabel(lead.contact_preference),
+    "Embaixador de origem": ambassador,
+    "URL da LP de origem": sourceUrl,
+  };
+}
+
+async function resolveRequiredMetadata(client: DatacrazyClient, ambassador: string) {
+  const [tags, fields] = await Promise.all([client.getTags(), client.getBusinessAdditionalFields()]);
+  const requiredTags = [GENERAL_TAG, `Embaixador - ${ambassador}`].map((name) => namedId<DatacrazyTag>(tags, name, "Tag"));
+  const businessFields = Object.fromEntries(
+    BUSINESS_FIELD_NAMES.map((name) => [name, namedId<DatacrazyAdditionalField>(fields, name, "Campo adicional")]),
+  ) as Record<BusinessFieldName, string>;
+  return { requiredTags, businessFields };
+}
+
+function leadPayload(
+  lead: CrmLeadRecord,
+  phone: string,
+  ambassador: string,
+  requiredTagIds: string[],
+  existing?: DatacrazyLead,
+): LeadPayload {
+  const mergedTagIds = [...new Set([...tagIds(existing?.tags), ...requiredTagIds])];
   return {
     name: lead.name,
     phone,
     ...(lead.email ? { email: lead.email } : {}),
     company: lead.establishment,
-    source: "Programa de Embaixadores",
+    source: `LP Embaixadores / ${ambassador}`,
     ...(lead.city ? { address: { city: lead.city, country: "BR" } } : {}),
     ...(lead.source_url ? { sourceReferral: { sourceUrl: lead.source_url } } : {}),
-    ...(tagId ? { tags: [{ id: [tagId] }] } : {}),
+    tags: [{ id: mergedTagIds }],
   };
 }
 
-async function upsertContact(lead: CrmLeadRecord, deps: SyncDependencies, phone: string) {
-  const payload = leadPayload(lead, phone, deps.tagId);
-  if (lead.datacrazy_lead_id) return deps.client.updateLead(lead.datacrazy_lead_id, payload);
-
-  const byPhone = await deps.client.searchLeads("phone", phone);
-  let existing = exactLead(byPhone, phone, lead.email);
-  if (!existing && lead.email) {
-    const byEmail = await deps.client.searchLeads("email", lead.email);
-    existing = exactLead(byEmail, phone, lead.email);
+async function upsertContact(
+  lead: CrmLeadRecord,
+  deps: SyncDependencies,
+  phone: string,
+  ambassador: string,
+  requiredTagIds: string[],
+) {
+  let existing: DatacrazyLead | undefined;
+  if (lead.datacrazy_lead_id) {
+    existing = await deps.client.getLead(lead.datacrazy_lead_id);
+  } else {
+    const byPhone = await deps.client.searchLeads("phone", phone);
+    existing = exactLead(byPhone, phone, lead.email);
+    if (!existing && lead.email) {
+      const byEmail = await deps.client.searchLeads("email", lead.email);
+      existing = exactLead(byEmail, phone, lead.email);
+    }
+    if (existing) existing = await deps.client.getLead(existing.id);
   }
+  const payload = leadPayload(lead, phone, ambassador, requiredTagIds, existing);
   if (existing) return deps.client.updateLead(existing.id, payload);
 
   const created = await deps.client.createLead(payload);
@@ -89,16 +174,25 @@ async function upsertContact(lead: CrmLeadRecord, deps: SyncDependencies, phone:
   return afterCreate;
 }
 
-async function resolveBusiness(lead: CrmLeadRecord, contactId: string, deps: SyncDependencies) {
-  if (lead.datacrazy_business_id) return lead.datacrazy_business_id;
+async function resolveBusiness(lead: CrmLeadRecord, contactId: string, deps: SyncDependencies, title: string) {
+  if (lead.datacrazy_business_id) {
+    await deps.client.updateBusiness(lead.datacrazy_business_id, { title });
+    return lead.datacrazy_business_id;
+  }
   const businesses = await deps.client.getLeadBusinesses(contactId);
   const sameSubmission = businesses.find((item) => item.externalId === lead.crm_external_id);
-  if (sameSubmission) return sameSubmission.id;
+  if (sameSubmission) {
+    await deps.client.updateBusiness(sameSubmission.id, { title });
+    return sameSubmission.id;
+  }
 
   const recentId = await deps.findRecentBusiness?.(lead);
   if (recentId) {
     const recentOpen = businesses.find((item) => item.id === recentId && item.status === "in_process");
-    if (recentOpen) return recentOpen.id;
+    if (recentOpen) {
+      await deps.client.updateBusiness(recentOpen.id, { title });
+      return recentOpen.id;
+    }
   }
 
   const business = await deps.client.createBusiness({
@@ -106,14 +200,22 @@ async function resolveBusiness(lead: CrmLeadRecord, contactId: string, deps: Syn
     stageId: deps.stageId,
     ...(deps.attendantId ? { attendantId: deps.attendantId } : {}),
     externalId: lead.crm_external_id,
+    title,
   });
   return business.id;
 }
 
 export async function syncLeadRecord(lead: CrmLeadRecord, deps: SyncDependencies) {
   const phone = normalizeBrazilianPhone(lead.phone_normalized || lead.phone);
-  const contact = await upsertContact(lead, deps, phone);
-  const businessId = await resolveBusiness(lead, contact.id, deps);
+  const ambassador = ambassadorLabel(lead);
+  const businessValues = requiredBusinessValues(lead, ambassador);
+  const metadata = await resolveRequiredMetadata(deps.client, ambassador);
+  const contact = await upsertContact(lead, deps, phone, ambassador, metadata.requiredTags);
+  const title = `${lead.establishment} | ${ambassador}`;
+  const businessId = await resolveBusiness(lead, contact.id, deps, title);
+  await Promise.all(BUSINESS_FIELD_NAMES.map((name) => (
+    deps.client.setBusinessAdditionalField(businessId, metadata.businessFields[name], businessValues[name])
+  )));
   return { datacrazyLeadId: contact.id, datacrazyBusinessId: businessId, phone };
 }
 
@@ -170,7 +272,6 @@ export async function processNextLead(leadId?: string, serviceClient?: SupabaseC
   try {
     const result = await syncLeadRecord(lead, {
       client: new DatacrazyClient(ready),
-      tagId: ready.tagId,
       stageId: ready.stageId,
       attendantId: ready.attendantId,
       findRecentBusiness: (item) => findRecentBusiness(db, item),

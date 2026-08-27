@@ -55,41 +55,22 @@ Os endpoints acima são os documentados oficialmente: [funis](https://docs.datac
 
 O `DATACRAZY_PIPELINE_ID` identifica o funil para conferência. O negócio é criado na etapa informada em `DATACRAZY_STAGE_ID`. O atendente é opcional para a API, mas deve ser definido para o encaminhamento comercial desejado.
 
-## 3. Campos personalizados
+## 3. Campos adicionais de negócio
 
-Crie ou localize, no painel, campos de lead para:
+Crie no DataCrazy, com a entidade **negócio**, estes quatro campos:
 
-- Origem principal
-- Embaixador
-- ID do embaixador
-- Slug do embaixador
-- Código da campanha
-- Página de origem
-- URL de origem
-- Faixa de faturamento
-- Preferência de contato
-- UTM Source, Medium, Campaign, Content e Term
-- ID externo da LP
-- Estabelecimento e cidade
-- Consentimento e data do consentimento
+- `Faturamento Mensal`
+- `Preferência de contato - Embaixadores`
+- `Embaixador de origem`
+- `URL da LP de origem`
 
-Copie cada ID para a variável correspondente descrita em `.env.example`.
+A integração consulta o catálogo por nome a cada processamento, desconsiderando diferenças de caixa, acentos e espaços repetidos. IDs não ficam no código nem em variáveis. Campo ausente ou nome duplicado interrompe a tentativa antes da criação do negócio e deixa o lead elegível para retentativa.
 
-### Limitação confirmada na documentação
-
-A documentação oficial expõe `additionalFields` como uma lista de strings, mas não explica o formato que associa o ID do campo ao valor. Ela também não oferece, no índice público atual, um endpoint para listar a definição desses campos. Para não inventar um contrato, esta versão:
-
-- salva todos esses dados no Supabase;
-- centraliza todos os IDs em variáveis de ambiente;
-- **não envia campos personalizados ao DataCrazy ainda**.
-
-O cliente server-side já contém o método isolado para o endpoint oficial `/leads/additional-fields`; ele só deve ser conectado ao sincronizador quando o formato de cada string for confirmado.
-
-Antes de habilitar esse envio, peça ao suporte do DataCrazy o formato oficial de `additionalFields` para `POST /api/v1/leads/additional-fields` e para atualização de lead. A origem padrão, nome, telefone, e-mail, empresa, cidade, tag e negócio já são sincronizados sem depender dessa definição.
+O OpenAPI público ainda não descreve as rotas de valores de campos de negócio. O CRM atual as disponibiliza sob `/api/crm`; por isso `DATACRAZY_CRM_API_URL` fica isolada da base pública `/api/v1` e pode ser ajustada sem alterar o restante da integração.
 
 ## 4. Tags
 
-Crie a tag `LP Embaixadores` e copie seu ID para `DATACRAZY_TAG_LP_EMBAIXADORES_ID`. Uma tag por embaixador é opcional e geralmente desnecessária: o snapshot do campo **Embaixador** no Supabase é a fonte principal da atribuição; tags são apenas auxiliares.
+Crie previamente `LP Embaixadores` e uma tag `Embaixador - {Nome público}` para cada embaixador. A integração busca por nome normalizado, preserva tags já vinculadas e não cria tags automaticamente. Tag ausente ou duplicada gera erro recuperável.
 
 ## 5. Configurar a Vercel
 
@@ -105,16 +86,14 @@ Variáveis mínimas para o contato e o negócio:
 ```env
 DATACRAZY_INTEGRATION_ENABLED=false
 DATACRAZY_API_URL=https://api.g1.datacrazy.io/api/v1
+DATACRAZY_CRM_API_URL=https://crm.g1.datacrazy.io
 DATACRAZY_API_TOKEN=valor_obtido_no_painel
 DATACRAZY_PIPELINE_ID=id_do_funil
 DATACRAZY_STAGE_ID=id_da_etapa
 DATACRAZY_ATTENDANT_ID=id_do_atendente
-DATACRAZY_TAG_LP_EMBAIXADORES_ID=id_da_tag
 DATACRAZY_TIMEOUT_MS=8000
 CRON_SECRET=segredo_longo_e_aleatorio
 ```
-
-Cadastre também os IDs de campos personalizados disponíveis em `.env.example`, mesmo que o envio deles permaneça bloqueado até a confirmação do payload.
 
 O cron está configurado para rodar a cada 5 minutos. Essa frequência exige um plano Vercel que aceite cron com intervalo menor que um dia. Em plano Hobby, altere a frequência ou use outro agendador seguro; o endpoint `/api/cron/datacrazy` já está protegido por `CRON_SECRET`.
 
@@ -156,9 +135,8 @@ No painel administrativo, abra `/admin/leads` para consultar o estado e solicita
 - [ ] ID do funil
 - [ ] ID da etapa
 - [ ] ID do atendente
-- [ ] ID da tag principal
-- [ ] IDs dos campos personalizados
-- [ ] Formato oficial de `additionalFields` confirmado com o suporte
+- [ ] Tags geral e específicas criadas com nomes únicos
+- [ ] Quatro campos adicionais de negócio criados com nomes únicos
 - [ ] Regra de duplicidade de 30 dias confirmada
 - [ ] Responsável comercial confirmado
 - [ ] Migration `202608250001_add_datacrazy_lead_sync.sql` aplicada
