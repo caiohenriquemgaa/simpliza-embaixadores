@@ -1,7 +1,7 @@
 .planSection{background:var(--simpliza-background)}
 .planIntro{max-width:760px;margin:0 auto;text-align:center}
 .planIntro :global(.eyebrow){justify-content:center}
-.planIntro h2{font-family:var(--font-libre-baskerville),'Libre Baskerville',Georgia,serif;font-size:clamp(36px,4vw,54px);line-height:1.05;letter-spacing:-2.4px;margin:20px 0;color:var(--simpliza-blue-dark)}
+.planIntro h2{font-family:var(--font-work-sans),Arial,sans-serif;font-size:clamp(36px,4vw,54px);line-height:1.05;letter-spacing:-2.4px;margin:20px 0;color:var(--simpliza-blue-dark);font-weight:600}
 .planIntro>p{margin:0;color:var(--muted);font-size:17px;line-height:1.55}
 .billingSwitch{width:max-content;display:flex;margin:30px auto 26px;padding:4px;border-radius:999px;background:#edf1f4}
 .billingSwitch button{position:relative;min-width:102px;height:44px;border:0;border-radius:999px;background:transparent;color:var(--muted);font-weight:800;cursor:pointer;transition:background-color .2s,color .2s,box-shadow .2s}
