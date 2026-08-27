@@ -1,7 +1,7 @@
 .planSection{background:var(--simpliza-background)}
 .planIntro{max-width:760px;margin:0 auto;text-align:center}
 .planIntro :global(.eyebrow){justify-content:center}
-.planIntro h2{font-family:var(--font-roboto-slab),'Roboto Slab',Georgia,serif;font-size:clamp(36px,4vw,54px);line-height:1.05;letter-spacing:-2.4px;margin:20px 0;color:var(--simpliza-blue-dark)}
+.planIntro h2{font-family:var(--font-libre-baskerville),'Libre Baskerville',Georgia,serif;font-size:clamp(36px,4vw,54px);line-height:1.05;letter-spacing:-2.4px;margin:20px 0;color:var(--simpliza-blue-dark)}
 .planIntro>p{margin:0;color:var(--muted);font-size:17px;line-height:1.55}
 .billingSwitch{width:max-content;display:flex;margin:30px auto 26px;padding:4px;border-radius:999px;background:#edf1f4}
 .billingSwitch button{position:relative;min-width:102px;height:44px;border:0;border-radius:999px;background:transparent;color:var(--muted);font-weight:800;cursor:pointer;transition:background-color .2s,color .2s,box-shadow .2s}
@@ -24,9 +24,9 @@
 .planPrice small,.planPrice b{grid-column:1/-1;margin-top:12px}
 .planPrice small{font-weight:750}.planPrice b{width:max-content;margin:10px auto 0;padding:7px 14px;border-radius:999px;background:var(--simpliza-green-dark);color:white;font-size:12px}
 .planDetails,.planCta{display:flex;align-items:center;justify-content:center;min-height:46px;border-radius:999px;font-size:14px;font-weight:850}
-.planDetails{padding:0 25px;background:#087eff;color:white;box-shadow:0 8px 18px #087eff34}
+.planDetails{padding:0 25px;background:var(--simpliza-blue-dark);color:white;box-shadow:0 8px 18px color-mix(in srgb,var(--simpliza-blue-dark) 24%,transparent)}
 .planTerms{margin:24px 0 0!important;color:#60768c!important;font-size:12px}
-.planCta{margin-top:16px;border-radius:10px;background:#20d36e;color:#063b27}
+.planCta{margin-top:16px;border-radius:10px;background:var(--simpliza-green-dark);color:white}
 
 @media(max-width:600px){
   .planSection{padding-left:14px;padding-right:14px}
