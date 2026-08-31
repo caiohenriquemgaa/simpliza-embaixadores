@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 async function request(path) {
@@ -53,4 +54,18 @@ test("marks the administrative login as noindex", async () => {
   const html = await response.text();
   assert.equal(response.status, 200);
   assert.match(html, /name="robots" content="noindex, nofollow, (?:nocache|noarchive)"/);
+});
+
+test("keeps Meta Pixel configuration optional and tracks ambassador pages", async () => {
+  const component = await readFile(new URL("../app/components/meta-pixel.tsx", import.meta.url), "utf8");
+  const layout = await readFile(new URL("../app/layout.tsx", import.meta.url), "utf8");
+  const exampleEnv = await readFile(new URL("../.env.example", import.meta.url), "utf8");
+
+  assert.match(component, /NEXT_PUBLIC_META_PIXEL_ID/);
+  assert.match(component, /"track", "PageView"/);
+  assert.match(component, /"track", "ViewContent"/);
+  assert.match(component, /ambassador_slug/);
+  assert.match(component, /simpliza_meta_pixel_consent/);
+  assert.match(layout, /<MetaPixel \/>/);
+  assert.match(exampleEnv, /^NEXT_PUBLIC_META_PIXEL_ID=/m);
 });

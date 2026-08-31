@@ -8,7 +8,6 @@ import { Icon } from "./brand-icon";
 declare global {
   interface Window {
     dataLayer?: Record<string, unknown>[];
-    fbq?: (action: string, event: string, data?: Record<string, unknown>) => void;
   }
 }
 
