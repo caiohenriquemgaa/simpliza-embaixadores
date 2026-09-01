@@ -5,7 +5,7 @@ const hasSupabaseUrl = Boolean(supabaseUrl && !supabaseUrl.startsWith("SUBSTITUA
 const supabaseOrigin = hasSupabaseUrl && supabaseUrl ? new URL(supabaseUrl).origin : "";
 const connectSources = ["'self'", supabaseOrigin, "https://www.facebook.com"].filter(Boolean).join(" ");
 const securityHeaders = [
-  { key: "Content-Security-Policy", value: `default-src 'self'; base-uri 'self'; connect-src ${connectSources}; font-src 'self' data:; form-action 'self'; frame-ancestors 'none'; img-src 'self' data: blob: https:; object-src 'none'; script-src 'self' 'unsafe-inline' https://connect.facebook.net; style-src 'self' 'unsafe-inline'; upgrade-insecure-requests` },
+  { key: "Content-Security-Policy", value: `default-src 'self'; base-uri 'self'; connect-src ${connectSources}; font-src 'self' data:; form-action 'self' https://www.facebook.com; frame-src https://www.facebook.com; frame-ancestors 'none'; img-src 'self' data: blob: https:; object-src 'none'; script-src 'self' 'unsafe-inline' https://connect.facebook.net; style-src 'self' 'unsafe-inline'; upgrade-insecure-requests` },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
   { key: "X-Content-Type-Options", value: "nosniff" },
