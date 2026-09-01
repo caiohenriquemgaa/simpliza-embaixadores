@@ -2,24 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-
-const CONSENT_KEY = "simpliza_meta_pixel_consent";
-
-declare global {
-  interface Window {
-    _fbq?: unknown;
-    fbq?: ((...args: unknown[]) => void) & {
-      callMethod?: (...args: unknown[]) => void;
-      loaded?: boolean;
-      push?: (...args: unknown[]) => void;
-      queue?: unknown[][];
-      version?: string;
-    };
-  }
-}
+import { flushMetaPixelQueue, META_PIXEL_CONSENT_KEY, trackMetaEvent } from "@/lib/meta-pixel";
 
 function bootstrapPixel(pixelId: string) {
-  if (window.fbq) return;
+  if (window.fbq) {
+    flushMetaPixelQueue();
+    return;
+  }
 
   const fbq = function (...args: unknown[]) {
     if (fbq.callMethod) fbq.callMethod(...args);
@@ -39,15 +28,16 @@ function bootstrapPixel(pixelId: string) {
   document.head.appendChild(script);
 
   fbq("init", pixelId);
+  flushMetaPixelQueue();
 }
 
 function trackPage(pathname: string) {
-  window.fbq?.("track", "PageView");
+  trackMetaEvent("PageView");
 
   const match = pathname.match(/^\/embaixadores\/([a-z0-9-]+)\/?$/);
   if (!match) return;
 
-  window.fbq?.("track", "ViewContent", {
+  trackMetaEvent("ViewContent", {
     content_category: "landing_page_embaixador",
     content_name: match[1],
     ambassador_slug: match[1],
@@ -60,7 +50,7 @@ export function MetaPixel() {
   const [consent, setConsent] = useState<"accepted" | "rejected" | null>(null);
 
   useEffect(() => {
-    const saved = window.localStorage.getItem(CONSENT_KEY);
+    const saved = window.localStorage.getItem(META_PIXEL_CONSENT_KEY);
     if (saved !== "accepted" && saved !== "rejected") return;
     const timer = window.setTimeout(() => setConsent(saved), 0);
     return () => window.clearTimeout(timer);
@@ -75,7 +65,7 @@ export function MetaPixel() {
   if (!pixelId || pathname.startsWith("/admin") || consent !== null) return null;
 
   function choose(value: "accepted" | "rejected") {
-    window.localStorage.setItem(CONSENT_KEY, value);
+    window.localStorage.setItem(META_PIXEL_CONSENT_KEY, value);
     setConsent(value);
   }
 

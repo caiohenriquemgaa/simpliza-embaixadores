@@ -2,14 +2,9 @@
 
 import { FormEvent, useRef, useState } from "react";
 import { readJsonResponse } from "@/lib/http";
+import { trackDataLayerEvent, trackMetaEvent } from "@/lib/meta-pixel";
 import { maskBrazilianPhone } from "@/lib/phone";
 import { Icon } from "./brand-icon";
-
-declare global {
-  interface Window {
-    dataLayer?: Record<string, unknown>[];
-  }
-}
 
 type Props = { ambassadorId: string; ambassadorName: string; ambassadorSlug: string; campaignCode: string };
 
@@ -50,9 +45,9 @@ export function LeadForm({ ambassadorId, ambassadorName, ambassadorSlug, campaig
       const result = await readJsonResponse<{ error?: string }>(response);
       if (!response.ok || !result) throw new Error(result?.error || "Não foi possível enviar seus dados.");
       requestId.current = null;
+      trackMetaEvent("Lead", { ambassador: ambassadorSlug, campaign: campaignCode });
+      trackDataLayerEvent({ event: "generate_lead", ambassador: ambassadorSlug, campaign: campaignCode });
       setStatus("sent");
-      window.dataLayer?.push({ event: "generate_lead", ambassador: ambassadorSlug, campaign: campaignCode });
-      window.fbq?.("track", "Lead", { ambassador: ambassadorSlug, campaign: campaignCode });
     } catch (error) {
       setStatus("error");
       setMessage(error instanceof Error ? error.message : "Não foi possível enviar seus dados.");

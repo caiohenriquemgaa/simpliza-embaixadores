@@ -58,14 +58,18 @@ test("marks the administrative login as noindex", async () => {
 
 test("keeps Meta Pixel configuration optional and tracks ambassador pages", async () => {
   const component = await readFile(new URL("../app/components/meta-pixel.tsx", import.meta.url), "utf8");
+  const leadForm = await readFile(new URL("../app/components/lead-form.tsx", import.meta.url), "utf8");
+  const tracker = await readFile(new URL("../lib/meta-pixel.ts", import.meta.url), "utf8");
   const layout = await readFile(new URL("../app/layout.tsx", import.meta.url), "utf8");
   const exampleEnv = await readFile(new URL("../.env.example", import.meta.url), "utf8");
 
   assert.match(component, /NEXT_PUBLIC_META_PIXEL_ID/);
-  assert.match(component, /"track", "PageView"/);
-  assert.match(component, /"track", "ViewContent"/);
+  assert.match(component, /trackMetaEvent\("PageView"/);
+  assert.match(component, /trackMetaEvent\("ViewContent"/);
   assert.match(component, /ambassador_slug/);
-  assert.match(component, /simpliza_meta_pixel_consent/);
+  assert.match(tracker, /simpliza_meta_pixel_consent/);
+  assert.match(tracker, /simplizaMetaPixelQueue/);
+  assert.match(leadForm, /trackMetaEvent\("Lead"/);
   assert.match(layout, /<MetaPixel \/>/);
   assert.match(exampleEnv, /^NEXT_PUBLIC_META_PIXEL_ID=/m);
 });
