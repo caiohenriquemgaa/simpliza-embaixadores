@@ -32,9 +32,9 @@ function harness({ duplicate = false, fail = false } = {}) {
     "@/lib/supabase": { createServiceSupabaseClient: () => client },
     "@/lib/datacrazy/sync": { normalizeBrazilianPhone: () => "+5541999999999", processNextLead() { throw new Error("CRM must never be contacted in tests"); } },
   };
-  const module = { exports: {} };
-  new Function("require", "module", "exports", compiled)(name => { if (!(name in dependencies)) throw new Error(name); return dependencies[name]; }, module, module.exports);
-  return { post: module.exports.POST, row: () => row, afterCount: () => afterCount };
+  const apiModule = { exports: {} };
+  new Function("require", "module", "exports", compiled)(name => { if (!(name in dependencies)) throw new Error(name); return dependencies[name]; }, apiModule, apiModule.exports);
+  return { post: apiModule.exports.POST, row: () => row, afterCount: () => afterCount };
 }
 function payload(overrides = {}) {
   return { name: "Teste", phone: "(41) 99999-9999", establishment: "Teste", monthlyRevenue: "Até R$ 20 mil", contactPreference: "whatsapp", consentLgpd: true, submittedAt: new Date().toISOString(), formStartedAt: Date.now() - 5000, sourceType: "institutional", sourcePage: "/inicio", sourceUrl: "https://preview.test/inicio", ...overrides };

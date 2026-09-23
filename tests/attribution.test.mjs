@@ -5,6 +5,7 @@ import { leadSchema } from "../lib/validation.ts";
 import { reportLeadAccepted } from "../lib/conversion.ts";
 import { getDatacrazyConfig } from "../lib/datacrazy/config.ts";
 import { institutionalCrmContext } from "../lib/datacrazy/institutional.ts";
+import { ambassadorSeo } from "../lib/seo.ts";
 
 test("captures real parameter names, bounds input and excludes secrets", () => {
   const touch = captureTouch("https://example.test/?intent=delivery&utm_source=chatgpt&utm_medium=paid_ai&campaign_id=123&opaque_click_id=abc&token=private&email=private#formulario", "https://referrer.test/article?email=private");
@@ -72,4 +73,11 @@ test("Preview cannot synchronize CRM even if integration env is enabled", () => 
     process.env.DATACRAZY_INTEGRATION_ENABLED = "true";
     assert.equal(getDatacrazyConfig().enabled, false);
   } finally { process.env = previous; }
+});
+
+test("Diego cannot inherit Felipe metadata and custom metadata is preserved", () => {
+  const diego = { slug: "diegogirao", name: "Diego Girão", seoTitle: "Indicação do Felipe", seoDescription: "Simpliza com Felipe" };
+  assert.match(ambassadorSeo(diego).title, /Diego Girão/);
+  assert.doesNotMatch(ambassadorSeo(diego).description, /Felipe/);
+  assert.equal(ambassadorSeo({ ...diego, seoTitle: "Título próprio", seoDescription: "Descrição própria" }).title, "Título próprio");
 });
