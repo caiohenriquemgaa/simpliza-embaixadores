@@ -18,15 +18,23 @@ function isSafeCtaUrl(value: string) {
 const optionalPublicUrl = z.string().max(2048).refine((value) => value === "" || isHttpUrl(value), "Use uma URL HTTP ou HTTPS válida.");
 const ctaUrl = z.string().min(1).max(500).refine(isSafeCtaUrl, "Use uma âncora, caminho interno ou URL HTTP/HTTPS.");
 
+const touchSchema = z.object({
+  landingUrl: z.string().url().max(2048).refine(isHttpUrl),
+  referrer: z.string().max(2048).refine(value => value === "" || isHttpUrl(value)),
+  capturedAt: z.string().datetime(),
+  parameters: z.record(z.string().max(80), z.string().max(200)).refine(value => Object.keys(value).length <= 24 && JSON.stringify(value).length <= 1600),
+});
 export const leadSchema = z.object({
   name: z.string().trim().min(2).max(120),
   phone: z.string().regex(/^\(\d{2}\) \d{4,5}-\d{4}$/),
   email: z.string().email().optional().or(z.literal("")),
   establishment: z.string().trim().min(2).max(160),
   city: z.string().trim().max(120).optional(),
-  ambassadorId: z.string().uuid(),
-  ambassadorName: z.string().trim().min(2).max(120),
-  ambassadorSlug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+  ambassadorId: z.string().uuid().optional(),
+  ambassadorName: z.string().trim().min(2).max(120).optional(),
+  ambassadorSlug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).optional(),
+  sourceType: z.enum(["ambassador", "institutional"]).default("ambassador"),
+  attribution: z.object({ firstTouch: touchSchema, conversionTouch: touchSchema, intent: z.enum(["gestao", "operacao", "delivery", "migracao"]).nullable() }).optional(),
   campaignCode: z.string().max(120).optional(),
   sourcePage: z.string().startsWith("/").max(500).refine((value) => !value.startsWith("//")),
   sourceUrl: z.string().url().max(2048).refine(isHttpUrl),
@@ -41,6 +49,9 @@ export const leadSchema = z.object({
   utmTerm: z.string().max(200).optional(),
   website: z.string().max(0).optional(),
   formStartedAt: z.number().int().positive(),
+}).superRefine((value, ctx) => {
+  if (value.sourceType === "ambassador" && (!value.ambassadorId || !value.ambassadorName || !value.ambassadorSlug)) ctx.addIssue({ code: "custom", message: "Embaixador obrigatório.", path: ["ambassadorId"] });
+  if (value.sourceType === "institutional" && (value.ambassadorId || value.ambassadorName || value.ambassadorSlug)) ctx.addIssue({ code: "custom", message: "Origem institucional não aceita embaixador.", path: ["sourceType"] });
 });
 
 export const idempotencyKeySchema = z.string().uuid();

@@ -61,14 +61,16 @@ export type AmbassadorInput = Omit<
 > & { publishedAt?: string | null };
 
 export type LeadInput = {
+  sourceType?: "ambassador" | "institutional";
+  attribution?: import("./attribution").Attribution;
   name: string;
   phone: string;
   email?: string;
   establishment: string;
   city?: string;
-  ambassadorId: string;
-  ambassadorName: string;
-  ambassadorSlug: string;
+  ambassadorId?: string;
+  ambassadorName?: string;
+  ambassadorSlug?: string;
   campaignCode?: string;
   sourcePage: string;
   sourceUrl: string;

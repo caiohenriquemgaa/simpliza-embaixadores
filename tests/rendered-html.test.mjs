@@ -18,7 +18,7 @@ test("renders the public landing content in the initial HTML", async () => {
   const html = await response.text();
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
-  assert.match(html, /<h1>Gestão de restaurante não precisa ser complicada\.<\/h1>/);
+  assert.match(html, /<h1>Simplifique a gestão do seu restaurante\.<\/h1>/);
   assert.match(html, /Fale com um especialista/);
   assert.match(html, /Prefere contato por/);
   assert.match(html, /Simule o plano ideal para o seu restaurante/);
@@ -69,7 +69,9 @@ test("keeps Meta Pixel configuration optional and tracks ambassador pages", asyn
   assert.match(component, /ambassador_slug/);
   assert.match(tracker, /simpliza_meta_pixel_consent/);
   assert.match(tracker, /simplizaMetaPixelQueue/);
-  assert.match(leadForm, /trackMetaEvent\("Lead"/);
+  assert.match(leadForm, /reportLeadAccepted/);
+  const conversion = await readFile(new URL("../lib/conversion.ts", import.meta.url), "utf8");
+  assert.match(conversion, /trackMetaEvent\("Lead"/);
   assert.match(layout, /<MetaPixel \/>/);
   assert.match(exampleEnv, /^NEXT_PUBLIC_META_PIXEL_ID=/m);
 });

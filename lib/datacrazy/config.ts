@@ -39,7 +39,7 @@ export function getDatacrazyConfig(): DatacrazyConfig {
 
   const timeout = Number(process.env.DATACRAZY_TIMEOUT_MS ?? 8000);
   return {
-    enabled: process.env.DATACRAZY_INTEGRATION_ENABLED === "true",
+    enabled: process.env.VERCEL_ENV !== "preview" && process.env.DATACRAZY_INTEGRATION_ENABLED === "true",
     apiUrl,
     crmApiUrl,
     token: optional("DATACRAZY_API_TOKEN"),

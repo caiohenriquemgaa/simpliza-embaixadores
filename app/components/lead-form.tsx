@@ -1,32 +1,37 @@
 "use client";
 
-import { FormEvent, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { readJsonResponse } from "@/lib/http";
-import { trackDataLayerEvent, trackMetaEvent } from "@/lib/meta-pixel";
 import { maskBrazilianPhone } from "@/lib/phone";
+import { readAttribution, sourceName } from "@/lib/attribution";
+import { reportLeadAccepted } from "@/lib/conversion";
 import { Icon } from "./brand-icon";
 
-type Props = { ambassadorId: string; ambassadorName: string; ambassadorSlug: string; campaignCode: string };
+type Props = { sourceType?: "ambassador" | "institutional"; ambassadorId?: string; ambassadorName?: string; ambassadorSlug?: string; campaignCode?: string };
 
-export function LeadForm({ ambassadorId, ambassadorName, ambassadorSlug, campaignCode }: Props) {
+export function LeadForm({ sourceType = "ambassador", ambassadorId, ambassadorName, ambassadorSlug, campaignCode }: Props) {
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [message, setMessage] = useState("");
   const [phone, setPhone] = useState("");
   const [startedAt] = useState(() => Date.now());
   const requestId = useRef<string | null>(null);
 
+  useEffect(() => { readAttribution(); }, []);
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setStatus("sending");
     setMessage("");
     const form = new FormData(event.currentTarget);
-    const params = new URLSearchParams(window.location.search);
+    const attribution = readAttribution();
+    const params = new URLSearchParams(attribution.firstTouch.parameters);
+    const originName = sourceName(sourceType, ambassadorSlug, attribution.firstTouch);
     requestId.current ??= crypto.randomUUID();
     const payload = {
       name: form.get("name"), phone, email: form.get("email"),
       establishment: form.get("establishment"), city: form.get("city"),
       monthlyRevenue: form.get("monthlyRevenue"), contactPreference: form.get("contactPreference"),
-      ambassadorId, ambassadorName, ambassadorSlug, campaignCode,
+      ambassadorId, ambassadorName, ambassadorSlug, campaignCode, sourceType, attribution,
       sourcePage: window.location.pathname, sourceUrl: window.location.href,
       consentLgpd: form.get("consent") === "on", submittedAt: new Date().toISOString(),
       website: form.get("website"), formStartedAt: startedAt,
@@ -42,12 +47,11 @@ export function LeadForm({ ambassadorId, ambassadorName, ambassadorSlug, campaig
         headers: { "content-type": "application/json", "idempotency-key": requestId.current },
         body: JSON.stringify(payload),
       });
-      const result = await readJsonResponse<{ error?: string }>(response);
-      if (!response.ok || !result) throw new Error(result?.error || "Não foi possível enviar seus dados.");
+      const result = await readJsonResponse<{ error?: string; ok?: boolean; leadId?: string }>(response);
+      if (!response.ok || !result?.ok || !result.leadId) throw new Error(result?.error || "Não foi possível enviar seus dados.");
       requestId.current = null;
-      trackMetaEvent("Lead", { ambassador: ambassadorSlug, campaign: campaignCode });
-      trackDataLayerEvent({ event: "generate_lead", ambassador: ambassadorSlug, campaign: campaignCode });
       setStatus("sent");
+      reportLeadAccepted(result.leadId, sourceType, originName, attribution, campaignCode, ambassadorSlug);
     } catch (error) {
       setStatus("error");
       setMessage(error instanceof Error ? error.message : "Não foi possível enviar seus dados.");
