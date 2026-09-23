@@ -16,7 +16,7 @@ export function captureTouch(href: string, referrer: string, now = new Date().to
   const parameters: Record<string, string> = {};
   let budget = 0;
   for (const [key, raw] of url.searchParams) {
-    if (Object.keys(parameters).length >= 24 || key.length > 80 || /token|secret|password|email|phone|name|code|auth/i.test(key)) continue;
+    if (Object.keys(parameters).length >= 24 || key.length > 80 || /token|secret|password|email|phone|auth|^code$|^name$|^_vercel/i.test(key)) continue;
     const value = raw.slice(0, 200);
     if (budget + key.length + value.length > 1200) continue;
     parameters[key] = value;
@@ -34,7 +34,9 @@ export function readAttribution(): Attribution {
   if (!memory) {
     try {
       const stored = JSON.parse(sessionStorage.getItem(storageKey) || "null");
-      if (stored?.firstTouch?.landingUrl && new URL(stored.firstTouch.landingUrl).origin === window.location.origin) memory = stored;
+      if (typeof stored?.firstTouch?.landingUrl === "string" && typeof stored.firstTouch.referrer === "string" && typeof stored.firstTouch.capturedAt === "string" && Number.isFinite(Date.parse(stored.firstTouch.capturedAt)) && new URL(stored.firstTouch.landingUrl).origin === window.location.origin) {
+        memory = { firstTouch: captureTouch(stored.firstTouch.landingUrl, stored.firstTouch.referrer, stored.firstTouch.capturedAt), intent: parseIntent(stored.intent) };
+      }
     } catch {}
   }
   const intent = parseIntent(new URL(window.location.href).searchParams.get("intent")) ?? memory?.intent ?? null;

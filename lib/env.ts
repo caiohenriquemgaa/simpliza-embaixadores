@@ -11,11 +11,14 @@ export function getPublicSupabaseConfig() {
   return { url, publishableKey };
 }
 
-export function getPublicSiteUrl(fallback = "https://simpliza.com.br") {
+export function getPublicSiteUrl(fallback = "https://www.embaixadorsimpliza.com.br") {
   const value = process.env.NEXT_PUBLIC_SITE_URL;
   if (!isUsableEnvValue(value)) return fallback;
   try {
-    return new URL(value).origin;
+    const url = new URL(value);
+    // The institutional corporate site does not host this project's routes.
+    if (["simpliza.com.br", "www.simpliza.com.br"].includes(url.hostname)) return fallback;
+    return url.origin;
   } catch {
     return fallback;
   }

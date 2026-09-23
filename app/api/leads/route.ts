@@ -19,7 +19,11 @@ export async function POST(request: Request) {
   if (Number.isFinite(contentLength) && contentLength > MAX_BODY_BYTES) return Response.json({ error: "Dados enviados excedem o limite permitido." }, { status: 413 });
 
   let body: unknown;
-  try { body = await request.json(); }
+  try {
+    const text = await request.text();
+    if (new TextEncoder().encode(text).byteLength > MAX_BODY_BYTES) return Response.json({ error: "Dados enviados excedem o limite permitido." }, { status: 413 });
+    body = JSON.parse(text);
+  }
   catch { return Response.json({ error: "Dados inválidos." }, { status: 400 }); }
   const parsed = leadSchema.safeParse(body);
   const requestKey = idempotencyKeySchema.safeParse(request.headers.get("idempotency-key"));
@@ -48,7 +52,8 @@ export async function POST(request: Request) {
   if (sourceUrl.origin !== requestUrl.origin || sourceUrl.pathname !== value.sourcePage || !(institutional ? ["/", "/inicio"].includes(value.sourcePage) : allowedSourcePath(value.sourcePage, ambassador!.slug))) {
     return Response.json({ error: "Página de origem inválida." }, { status: 400 });
   }
-  const firstTouch = value.attribution?.firstTouch ?? captureTouch(sourceUrl.href, "");
+  const submittedTouch = value.attribution?.firstTouch;
+  const firstTouch = submittedTouch ? captureTouch(submittedTouch.landingUrl, submittedTouch.referrer, submittedTouch.capturedAt) : captureTouch(sourceUrl.href, "");
   if (new URL(firstTouch.landingUrl).origin !== requestUrl.origin) return Response.json({ error: "Atribuição inválida." }, { status: 400 });
   const conversionTouch = captureTouch(sourceUrl.href, firstTouch.referrer);
   const attribution = { firstTouch, conversionTouch, intent: value.attribution?.intent ?? null };
