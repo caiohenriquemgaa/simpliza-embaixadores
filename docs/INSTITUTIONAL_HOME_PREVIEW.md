@@ -55,4 +55,18 @@ Valores mensais / anual equivalente por mês do simulador: Start 149/99; Essenci
 - Workflow `.github/workflows/institutional-preview.yml` executa remotamente lint, TypeScript, suíte existente e builds vinext/Next, mais testes de atribuição e API.
 - API testada com dependências simuladas: aceitação, persistência de first touch e contexto institucional, identidade legada, falha de banco, idempotência, origem/caminho inválidos, tamanho real do body, antispam e bloqueio de Preview. Nenhum teste acessa um CRM real.
 - Browser: home institucional, `/inicio`, destaque Delivery, âncoras e first touch preservado após navegação. Formulário real de Preview retorna bloqueio controlado, sem `generate_lead`.
-- A confirmação real de gravação e conversão com Supabase permanece pendente do banco isolado; testes simulados não são evidência de persistência externa.
+- A gravação real foi confirmada na continuação autorizada abaixo; os testes simulados anteriores permanecem distintos dessa evidência externa.
+
+## Validação real — continuação de 23/09/2026 (BRT)
+
+- Projeto Supabase confirmado por CLI e pelo `connect-src` da Preview: `spmmdhpbdpqqxrukyygj`, “LP Embaixadores Simpliza”. Vercel: `prj_XUD43dFVpU7D5KorbzGdS2oAoj3V`.
+- Migration `202609230001` aplicada via CLI e confirmada no histórico remoto. As quatro migrations anteriores já estavam aplicadas. Nenhum seed/reset executado.
+- Os 19 registros anteriores mantiveram o fingerprint dos campos legados `1c3b7c45215e259394a42bebf7b06689` antes/depois da migration e depois do teste; nenhum dado histórico foi modificado.
+- Enviado exatamente **um** formulário real, sem mock, na Preview `https://simpliza-embaixadores-gkqdvhkp8-simpliza.vercel.app/`.
+- Registro de teste: `372e355e-9d1c-4b21-8135-8685fc9eff63`, criado em `2026-09-24T02:08:42.900461Z` (23/09, 23:08 BRT), nome “Teste ChatGPT Ads Simpliza”, estabelecimento “Restaurante Teste ChatGPT”. Telefone fictício com assinante zerado e e-mail `.invalid`; nenhum contato real.
+- Confirmados por consulta direta: nome, estabelecimento, telefone e normalização, e-mail, cidade, faturamento, preferência `email`, consentimento e timestamp; `ambassador_id/name/slug=null`.
+- Confirmados: `source_type=institutional`, `source_name=chatgpt_ads`, `intent=delivery`, `utm_source=chatgpt`, `utm_medium=paid_ai`, `utm_campaign=br_aquisicao_intencao_simpliza`, `utm_content=teste_integracao`, `utm_term=null` (ausente na entrada).
+- Confirmados `source_page=/`, URL completa de origem, `firstTouch`, `conversionTouch`, parâmetros, timestamps e `crmContext.source=ChatGPT Ads — Delivery`. Referrer vazio porque o acesso foi direto à URL de teste; nenhum identificador proprietário foi inventado.
+- Evidência de conversão observada sem substituir resposta da API: requisição com zero conversões → HTTP 201 com o ID real acima → um `generate_lead` no dataLayer → um evento DOM `simpliza:lead_submitted`, com o mesmo ID. Clique anterior em formulário inválido: zero requisições e zero conversões. Consentimento Meta recusado durante o teste, evitando conversão de teste nessa plataforma.
+- CRM: `crm_status=ignored`, `crm_attempts=0`, IDs Data Crazy, tentativa e data de sincronização nulos. Função `claim_lead_for_crm` conferida no banco: somente `pending`, `failed` e `processing` vencidos são elegíveis. Nenhum envio ao Data Crazy.
+- Nenhum código visual foi alterado na continuação. Nenhum merge na main, deploy de Production ou mudança de domínio. A alteração no schema compartilhado foi explicitamente autorizada pelo usuário.
