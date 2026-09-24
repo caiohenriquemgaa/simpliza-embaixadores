@@ -28,8 +28,8 @@ Migration criada: `supabase/migrations/202609230001_institutional_lead_attributi
 - Torna `ambassador_id` opcional para origem institucional; mantém FK e exige ID para embaixadores.
 - Adiciona `source_type` com default legado, `source_name`, `intent`, `attribution` e índice de aquisição.
 - Não apaga, renomeia nem reescreve dados. Inserts legados continuam válidos.
-- **Não aplicada**: a consulta ao projeto vinculado não encontrou branches Supabase, e não foi confirmado banco separado de produção. Não houve escrita no Supabase nesta execução.
-- Preview bloqueia inserções com HTTP 503 por padrão. Para liberar, apontar as variáveis Supabase **da branch Preview** para um banco isolado, aplicar as migrations nesse banco e configurar `LEADS_PREVIEW_WRITES_ENABLED=true` apenas nesse ambiente.
+- **Aplicada na continuação autorizada** ao projeto atual `spmmdhpbdpqqxrukyygj` (LP Embaixadores Simpliza). Schema, constraints, triggers e função da fila CRM foram conferidos antes. Apenas esta migration estava pendente; aplicação transacional com limites de lock de 5s e execução de 30s. Nenhuma troca de banco.
+- Preview bloqueia inserções com HTTP 503 por padrão. A continuação autorizou gravação controlada no banco atual; `LEADS_PREVIEW_WRITES_ENABLED=true` foi configurada exclusivamente no Preview da branch `feature/institutional-home-chatgpt-ads`. Nenhuma variável de Production foi alterada.
 - Todos os registros de Preview ficam `crm_status=ignored`; o módulo Data Crazy também força integração desativada em `VERCEL_ENV=preview`, inclusive cron/retry.
 - Antes de futura publicação, a migration precisa estar aplicada no banco de destino. Esta missão não autoriza essa publicação.
 

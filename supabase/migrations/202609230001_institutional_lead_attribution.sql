@@ -1,6 +1,8 @@
--- Apply only to the verified Preview database during this mission.
+-- Reviewed for the existing linked database; non-destructive application authorized.
 -- Additive, legacy inserts keep working, no rows are deleted or rewritten.
 begin;
+set local lock_timeout = '5s';
+set local statement_timeout = '30s';
 alter table public.leads
   alter column ambassador_id drop not null,
   add column source_type text not null default 'ambassador' check (source_type in ('ambassador', 'institutional')),

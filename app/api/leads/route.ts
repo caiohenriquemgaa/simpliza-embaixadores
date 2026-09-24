@@ -31,7 +31,7 @@ export async function POST(request: Request) {
   const value = parsed.data;
   if (value.website || Date.now() - value.formStartedAt < 2500) return Response.json({ error: "Aguarde alguns segundos e tente novamente." }, { status: 400 });
 
-  // Preview must not write into a shared production database by default.
+  // Preview writes require explicit authorization in its environment configuration.
   if (process.env.VERCEL_ENV === "preview" && process.env.LEADS_PREVIEW_WRITES_ENABLED !== "true") {
     return Response.json({ error: "O envio de contatos neste Preview aguarda a configuração do banco de testes." }, { status: 503 });
   }
