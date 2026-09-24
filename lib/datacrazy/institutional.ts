@@ -1,6 +1,5 @@
 import type { Attribution } from "../attribution.ts";
-// Prepared mapping only. Institutional submissions are held with crm_status=ignored
-// until the destination pipeline, tags and additional-field IDs are configured.
+// Context is persisted before CRM sync. The institutional channel has its own activation flag.
 export function institutionalCrmContext(sourceName: string, attribution: Attribution) {
   const labels = { gestao: "Gestão", operacao: "Operação", delivery: "Delivery", migracao: "Migração" };
   const intent = attribution.intent;

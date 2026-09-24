@@ -7,6 +7,7 @@ import {
   normalizeDatacrazyName,
   retryDelaySeconds,
   syncLeadRecord,
+  processNextLead,
 } from "../lib/datacrazy/sync.ts";
 import { isLeadSearchResult, isPaginated } from "../lib/datacrazy/types.ts";
 
@@ -27,6 +28,7 @@ const tags = [
   { id: "tag-test", name: "Embaixador - Embaixador Teste" },
   { id: "tag-felipe", name: "Embaixador - Felipe" },
   { id: "tag-ana", name: "Embaixador - Ana" },
+  { id: "tag-diego", name: "Embaixador - Diego Girão" },
 ];
 
 const fields = [
@@ -343,4 +345,123 @@ test("requires token and stage before activation", () => {
   };
   assert.throws(() => assertDatacrazyReady({ ...base, stageId: "stage" }), /TOKEN ausente/);
   assert.throws(() => assertDatacrazyReady({ ...base, token: "secret" }), /STAGE_ID ausente/);
+});
+
+const institutionalFieldNames = ["Como Conheceu o Simpliza?", "Identificação do formulário", "URL final", "Faturamento Mensal - formulário do site", "Como podemos entrar em contato?", "utm_source", "utm_campaign", "utm_content"];
+const institutionalLead = { ...baseLead, ambassador_id: null, ambassador_name: null, ambassador_slug: null, source_type: "institutional", source_name: "chatgpt_ads", intent: "delivery", utm_source: "chatgpt", utm_medium: "paid_ai", source_url: "https://example.test/?intent=delivery", attribution: { firstTouch: { parameters: { campaign_id: "campaign-42", ad_id: "ad-9" } } } };
+const destination = { stageId: "stage-commercial", pipelineId: "pipeline-commercial", attendantId: "dani", institutionalEnabled: true };
+function institutionalClient(overrides = {}) {
+  return client({
+    async getPipelines() { return { count: 1, data: [{ id: destination.pipelineId, name: "Simpliza" }] }; },
+    async getPipelineStages(id) { assert.equal(id, destination.pipelineId); return { count: 1, data: [{ id: destination.stageId, name: "Lead" }] }; },
+    async getAttendants() { return { count: 1, data: [{ id: "dani", name: "Danielle Sanchez" }] }; },
+    async getTags() { return ["ChatGPT Ads", "ChatGPT Ads - Delivery", "ChatGPT Ads - Gestão", "ChatGPT Ads - Operação", "ChatGPT Ads - Migração"].map(name => ({ id: name, name })); },
+    async getLeadAdditionalFields() { return [...institutionalFieldNames.map(name => ({ id: name, name, entity: "lead", type: "string" })), { id: "origin-options", name: "Origem do Lead", type: "options", options: [{ label: "Site" }] }]; },
+    async setLeadAdditionalField() {}, async ensureLeadNote() {},
+    ...overrides,
+  });
+}
+
+for (const [slug, publicName, label, tag] of [["felipe", "Felipe da Silva", "Felipe", "tag-felipe"], ["diegogirao", "Diego Girão", "Diego Girão", "tag-diego"]]) {
+  test("regression " + slug + ": preserves origin, tags, title, owner, stage and four fields", async () => {
+    let contact, business; const mapped = [];
+    await syncLeadRecord({ ...baseLead, ambassador_slug: slug, ambassador_name: publicName, source_type: "ambassador" }, {
+      client: client({ async createLead(p) { contact = p; return { id: "contact" }; }, async createBusiness(p) { business = p; return { id: "business" }; }, async setBusinessAdditionalField(_, id, value) { mapped.push([id, value]); } }),
+      stageId: "existing-stage", attendantId: "existing-owner",
+    });
+    assert.equal(contact.source, "LP Embaixadores / " + label);
+    assert.deepEqual(contact.tags, [{ id: ["tag-general", tag] }]);
+    assert.deepEqual(business, { leadId: "contact", stageId: "existing-stage", attendantId: "existing-owner", externalId: baseLead.crm_external_id, title: "Restaurante Teste | " + label });
+    assert.equal(mapped.length, 4);
+    assert.equal(mapped.find(([id]) => id === "field-ambassador")[1], label);
+  });
+}
+for (const [intent, label] of [["delivery", "Delivery"], ["gestao", "Gestão"], ["operacao", "Operação"], ["migracao", "Migração"], [null, null]]) {
+  test("institutional " + intent + ": commercial payload, attribution and safe missing intent", async () => {
+    let contact, business, note; const mapped = [];
+    const crm = institutionalClient({
+      async createLead(p) { contact = p; return { id: "contact" }; },
+      async createBusiness(p) { business = p; return { id: "business" }; },
+      async setLeadAdditionalField(_, id, value) { mapped.push([id, value]); },
+      async ensureLeadNote(_, marker, value) { note = JSON.parse(value); assert.ok(marker.includes(baseLead.crm_external_id)); },
+    });
+    await syncLeadRecord({ ...institutionalLead, intent }, { ...destination, client: crm, findRecentBusiness() { throw new Error("Must not reuse ambassador/free-plan business"); } });
+    assert.equal(contact.source, "ChatGPT Ads");
+    assert.deepEqual(contact.tags, [{ id: ["ChatGPT Ads", ...(label ? ["ChatGPT Ads - " + label] : [])] }]);
+    assert.equal(business.title, "Restaurante Teste | ChatGPT Ads");
+    assert.equal(business.stageId, destination.stageId);
+    assert.equal(business.attendantId, "dani");
+    assert.ok(mapped.some(([name, value]) => name === "Identificação do formulário" && value === "LP Institucional - ChatGPT Ads"));
+    assert.ok(mapped.some(([name, value]) => name === "utm_source" && value === "chatgpt"));
+    assert.ok(!mapped.some(([name]) => name === "origin-options"));
+    assert.equal(note.intent, intent);
+    assert.equal(note.utm_medium, "paid_ai");
+    assert.equal(note.attribution.firstTouch.parameters.ad_id, "ad-9");
+  });
+}
+
+test("institutional preflight rejects missing metadata, disabled channel and noncommercial destinations before mutation", async () => {
+  for (const overrides of [
+    { getTags: async () => [] },
+    { getLeadAdditionalFields: async () => [] },
+    { getPipelines: async () => ({ count: 1, data: [{ id: destination.pipelineId, name: "Plano Gratuito" }] }) },
+    { getPipelineStages: async () => ({ count: 1, data: [{ id: destination.stageId, name: "Nutrição" }] }) },
+    { getAttendants: async () => ({ count: 0, data: [] }) },
+  ]) {
+    let writes = 0;
+    const crm = institutionalClient({ ...overrides, async createLead() { writes++; }, async updateLead() { writes++; } });
+    await assert.rejects(() => syncLeadRecord(institutionalLead, { ...destination, client: crm }), DatacrazyError);
+    assert.equal(writes, 0);
+  }
+  await assert.rejects(() => syncLeadRecord(institutionalLead, { ...destination, institutionalEnabled: false, client: institutionalClient() }), /desativada/);
+});
+
+test("institutional retries reuse contact and submission business and preserve existing tags", async () => {
+  let payload;
+  const crm = institutionalClient({
+    async searchLeads() { return [{ id: "contact", rawPhone: "5511999999999" }]; },
+    async getLead() { return { id: "contact", tags: [{ id: "existing", name: "Existing" }] }; },
+    async updateLead(id, p) { payload = p; return { id }; },
+    async getLeadBusinesses() { return [{ id: "business", externalId: baseLead.crm_external_id }]; },
+    async createLead() { throw new Error("duplicate contact"); }, async createBusiness() { throw new Error("duplicate business"); },
+  });
+  const result = await syncLeadRecord(institutionalLead, { ...destination, client: crm });
+  assert.equal(result.datacrazyBusinessId, "business");
+  assert.deepEqual(payload.tags, [{ id: ["existing", "ChatGPT Ads", "ChatGPT Ads - Delivery"] }]);
+});
+
+test("CRM failure leaves persisted institutional lead with failed status and scheduled retry", async () => {
+  const savedEnv = { ...process.env }; const originalFetch = globalThis.fetch; const updates = [];
+  try {
+    Object.assign(process.env, { VERCEL_ENV: "production", DATACRAZY_INTEGRATION_ENABLED: "true", DATACRAZY_INSTITUTIONAL_ENABLED: "true", DATACRAZY_API_TOKEN: "test-only", DATACRAZY_STAGE_ID: destination.stageId, DATACRAZY_PIPELINE_ID: destination.pipelineId, DATACRAZY_ATTENDANT_ID: "dani", DATACRAZY_MANUAL_TEST_MODE: "false" });
+    globalThis.fetch = async () => new Response(null, { status: 503 });
+    const persisted = { ...institutionalLead };
+    const query = { eq() { return query; }, then(resolve) { resolve({ error: null }); } };
+    const db = { async rpc(name) { assert.equal(name, "claim_lead_for_crm"); return { data: [persisted], error: null }; }, from(table) { assert.equal(table, "leads"); return { update(value) { updates.push(value); return query; } }; } };
+    const result = await processNextLead(persisted.id, db);
+    assert.equal(result.status, "failed");
+    assert.equal(updates[0].crm_status, "failed");
+    assert.match(updates[0].crm_last_error, /503/);
+    assert.ok(Date.parse(updates[0].crm_next_retry_at) > Date.now());
+    assert.equal(persisted.id, baseLead.id);
+    assert.equal(persisted.intent, "delivery");
+  } finally { process.env = savedEnv; globalThis.fetch = originalFetch; }
+});
+
+test("lead-field adapter uses the lead entity and notes are idempotent across retry", async () => {
+  const calls = []; let noteSaved = false;
+  const crm = new DatacrazyClient({ apiUrl: "https://api.example.test/api/v1", crmApiUrl: "https://crm.example.test", token: "test", fetchImpl: async (url, init) => {
+    calls.push([String(url), init.method ?? "GET", init.body]);
+    if (String(url).includes("additionalFields?")) return Response.json({ data: [{ id: "f", name: "utm_source", entity: "lead", type: "string" }] });
+    if (String(url).includes("/notes?")) return Response.json({ count: noteSaved ? 1 : 0, data: noteSaved ? [{ history: "[marker]\ncontext" }] : [] });
+    if (String(url).endsWith("/notes") && init.method === "POST") noteSaved = true;
+    return new Response(null, { status: 204 });
+  } });
+  assert.equal((await crm.getLeadAdditionalFields())[0].id, "f");
+  await crm.setLeadAdditionalField("lead", "f", "chatgpt");
+  await crm.ensureLeadNote("lead", "[marker]", "context");
+  await crm.ensureLeadNote("lead", "[marker]", "context");
+  assert.equal(calls.filter(([url, method]) => url.endsWith("/notes") && method === "POST").length, 1);
+  assert.equal(calls[1][0], "https://crm.example.test/api/crm/additional-fields/lead/lead/f");
+  assert.equal(calls[1][2], JSON.stringify({ value: "chatgpt" }));
 });

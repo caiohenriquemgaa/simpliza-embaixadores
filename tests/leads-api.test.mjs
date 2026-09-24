@@ -5,6 +5,7 @@ import ts from "typescript";
 import * as validation from "../lib/validation.ts";
 import * as attribution from "../lib/attribution.ts";
 import * as institutional from "../lib/datacrazy/institutional.ts";
+import * as institutionalSync from "../lib/datacrazy/institutional-sync.ts";
 
 const source = await readFile(new URL("../app/api/leads/route.ts", import.meta.url), "utf8");
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
@@ -28,6 +29,7 @@ function harness({ duplicate = false, fail = false } = {}) {
     "next/server": { after() { afterCount++; } },
     "@/lib/attribution": attribution,
     "@/lib/datacrazy/institutional": institutional,
+    "@/lib/datacrazy/institutional-sync": institutionalSync,
     "@/lib/validation": validation,
     "@/lib/supabase": { createServiceSupabaseClient: () => client },
     "@/lib/datacrazy/sync": { normalizeBrazilianPhone: () => "+5541999999999", processNextLead() { throw new Error("CRM must never be contacted in tests"); } },
@@ -97,5 +99,31 @@ test("Preview defaults to no database writes and never schedules CRM", async () 
     assert.equal((await h.post(request(payload()))).status, 201);
     assert.equal(h.row().crm_status, "ignored");
     assert.equal(h.afterCount(), 0);
+  } finally { process.env = old; }
+});
+
+test("enabled ChatGPT channel queues only after persistence; other institutional sources remain held", async () => {
+  const old = { ...process.env };
+  try {
+    process.env.VERCEL_ENV = "production";
+    process.env.DATACRAZY_INSTITUTIONAL_ENABLED = "true";
+    const h = harness();
+    const response = await h.post(request(payload({ sourceUrl: "https://preview.test/inicio?utm_source=chatgpt&utm_medium=paid_ai" })));
+    assert.equal(response.status, 201);
+    assert.equal(h.row().crm_status, "pending");
+    assert.equal(h.afterCount(), 1);
+    const direct = harness();
+    assert.equal((await direct.post(request(payload()))).status, 201);
+    assert.equal(direct.row().crm_status, "ignored");
+    assert.equal(direct.afterCount(), 0);
+    const failure = harness({ fail: true });
+    assert.equal((await failure.post(request(payload({ sourceUrl: "https://preview.test/inicio?utm_source=chatgpt" })))).status, 500);
+    assert.equal(failure.afterCount(), 0);
+    process.env.VERCEL_ENV = "preview";
+    process.env.LEADS_PREVIEW_WRITES_ENABLED = "true";
+    const preview = harness();
+    assert.equal((await preview.post(request(payload({ sourceUrl: "https://preview.test/inicio?utm_source=chatgpt" })))).status, 201);
+    assert.equal(preview.row().crm_status, "ignored");
+    assert.equal(preview.afterCount(), 0);
   } finally { process.env = old; }
 });

@@ -214,6 +214,41 @@ export class DatacrazyClient {
     return result.data.filter(hasStringId) as DatacrazyBusiness[];
   }
 
+  async getLeadAdditionalFields(): Promise<DatacrazyAdditionalField[]> {
+    const params = new URLSearchParams({ take: "500", "filter[entity]": "lead" });
+    const result = await this.requestCrm(`/api/crm/additionalFields?${params}`);
+    const values = Array.isArray(result) ? result : isObject(result) && Array.isArray(result.data) ? result.data : null;
+    if (!values || !values.every(hasStringIdAndName)) {
+      throw new DatacrazyError("Resposta inválida ao buscar campos adicionais de lead.", { retryable: true });
+    }
+    return values.filter((item) => item.entity === undefined || item.entity === "lead") as DatacrazyAdditionalField[];
+  }
+
+  async setLeadAdditionalField(leadId: string, fieldId: string, value: string) {
+    await this.requestCrm(
+      `/api/crm/additional-fields/lead/${encodeURIComponent(leadId)}/${encodeURIComponent(fieldId)}`,
+      { method: "POST", body: JSON.stringify({ value }) }, true,
+    );
+  }
+
+  async ensureLeadNote(leadId: string, marker: string, note: string) {
+    // Read all pages before appending: a retry must not append the same context twice.
+    for (let skip = 0; ; skip += 100) {
+      const result = await this.request(`/leads/${encodeURIComponent(leadId)}/notes?take=100&skip=${skip}`);
+      if (!isPaginated<{ history?: string }>(result)) {
+        throw new DatacrazyError("Resposta inválida ao buscar notas.", { retryable: true });
+      }
+      if (result.data.some((item) => item.history?.includes(marker))) return;
+      if (skip + result.data.length >= result.count) break;
+      if (!result.data.length || skip >= 9900) {
+        throw new DatacrazyError("Não foi possível verificar todas as notas antes da retentativa.", { retryable: true });
+      }
+    }
+    await this.request(`/leads/${encodeURIComponent(leadId)}/notes`, {
+      method: "POST", body: JSON.stringify({ note: `${marker}\n${note}` }),
+    }, true);
+  }
+
   async getPipelines(): Promise<Paginated<Record<string, unknown>>> {
     const result = await this.request("/pipelines");
     if (!isPaginated<Record<string, unknown>>(result)) throw new DatacrazyError("Resposta inválida ao buscar funis.", { retryable: true });

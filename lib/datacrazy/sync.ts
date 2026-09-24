@@ -1,4 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Attribution, Intent } from "../attribution.ts";
+import { prepareInstitutionalSync } from "./institutional-sync.ts";
 import { createServiceSupabaseClient } from "../supabase.ts";
 import { assertDatacrazyReady, getDatacrazyConfig } from "./config.ts";
 import { DatacrazyClient, DatacrazyError } from "./client.ts";
@@ -13,7 +15,11 @@ export type CrmLeadRecord = {
   email?: string | null;
   establishment: string;
   city?: string | null;
-  ambassador_id: string;
+  ambassador_id: string | null;
+  source_type?: "ambassador" | "institutional";
+  source_name?: string | null;
+  intent?: Intent | null;
+  attribution?: Attribution | null;
   ambassador_name?: string | null;
   ambassador_slug?: string | null;
   campaign_code?: string | null;
@@ -37,6 +43,8 @@ export type CrmLeadRecord = {
 type SyncDependencies = {
   client: DatacrazyClient;
   stageId: string;
+  pipelineId?: string;
+  institutionalEnabled?: boolean;
   attendantId?: string;
   findRecentBusiness?: (lead: CrmLeadRecord) => Promise<string | null>;
 };
@@ -138,7 +146,7 @@ function leadPayload(
     phone,
     ...(lead.email ? { email: lead.email } : {}),
     company: lead.establishment,
-    source: `LP Embaixadores / ${ambassador}`,
+    source: lead.source_type === "institutional" ? "ChatGPT Ads" : `LP Embaixadores / ${ambassador}`,
     ...(lead.city ? { address: { city: lead.city, country: "BR" } } : {}),
     ...(lead.source_url ? { sourceReferral: { sourceUrl: lead.source_url } } : {}),
     tags: [{ id: mergedTagIds }],
@@ -186,7 +194,7 @@ async function resolveBusiness(lead: CrmLeadRecord, contactId: string, deps: Syn
     return sameSubmission.id;
   }
 
-  const recentId = await deps.findRecentBusiness?.(lead);
+  const recentId = lead.source_type === "institutional" ? null : await deps.findRecentBusiness?.(lead);
   if (recentId) {
     const recentOpen = businesses.find((item) => item.id === recentId && item.status === "in_process");
     if (recentOpen) {
@@ -207,6 +215,15 @@ async function resolveBusiness(lead: CrmLeadRecord, contactId: string, deps: Syn
 
 export async function syncLeadRecord(lead: CrmLeadRecord, deps: SyncDependencies) {
   const phone = normalizeBrazilianPhone(lead.phone_normalized || lead.phone);
+  if (lead.source_type === "institutional") {
+    if (!deps.institutionalEnabled) throw new DatacrazyError("Sincronização institucional desativada.", { retryable: true });
+    const metadata = await prepareInstitutionalSync(lead, deps.client, deps);
+    const contact = await upsertContact(lead, deps, phone, "ChatGPT Ads", metadata.requiredTags);
+    const businessId = await resolveBusiness(lead, contact.id, deps, `${lead.establishment} | ChatGPT Ads`);
+    for (const field of metadata.fields) await deps.client.setLeadAdditionalField(contact.id, field.id, field.value);
+    await deps.client.ensureLeadNote(contact.id, metadata.marker, metadata.note);
+    return { datacrazyLeadId: contact.id, datacrazyBusinessId: businessId, phone };
+  }
   const ambassador = ambassadorLabel(lead);
   const businessValues = requiredBusinessValues(lead, ambassador);
   const metadata = await resolveRequiredMetadata(deps.client, ambassador);
@@ -273,6 +290,8 @@ export async function processNextLead(leadId?: string, serviceClient?: SupabaseC
     const result = await syncLeadRecord(lead, {
       client: new DatacrazyClient(ready),
       stageId: ready.stageId,
+      pipelineId: ready.pipelineId,
+      institutionalEnabled: ready.institutionalEnabled,
       attendantId: ready.attendantId,
       findRecentBusiness: (item) => findRecentBusiness(db, item),
     });

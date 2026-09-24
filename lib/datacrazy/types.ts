@@ -17,6 +17,7 @@ export type DatacrazyAdditionalField = {
   name: string;
   entity?: string;
   type?: string;
+  options?: Array<{ label: string }> | null;
 };
 
 export type DatacrazyBusiness = {

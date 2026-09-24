@@ -1,4 +1,5 @@
 import { captureTouch, sourceName } from "@/lib/attribution";
+import { institutionalQueueEnabled } from "@/lib/datacrazy/institutional-sync";
 import { institutionalCrmContext } from "@/lib/datacrazy/institutional";
 import { after } from "next/server";
 import { normalizeBrazilianPhone, processNextLead } from "@/lib/datacrazy/sync";
@@ -60,6 +61,7 @@ export async function POST(request: Request) {
   const utms = Object.fromEntries(["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term"].map(key => [key, firstTouch.parameters[key] || null]));
   const originName = sourceName(value.sourceType, ambassador?.slug, firstTouch);
 
+  const queueForCrm = process.env.VERCEL_ENV !== "preview" && (!institutional || institutionalQueueEnabled(originName));
   let phone: string;
   try { phone = normalizeBrazilianPhone(value.phone); }
   catch { return Response.json({ error: "Revise o telefone informado." }, { status: 400 }); }
@@ -72,7 +74,7 @@ export async function POST(request: Request) {
     source_type: value.sourceType, source_name: originName, intent: attribution.intent, attribution: { ...attribution, ...(institutional ? { crmContext: institutionalCrmContext(originName, attribution) } : {}) },
     campaign_code: ambassador?.campaign_code || null, source_page: value.sourcePage, source_url: sourceUrl.href,
     monthly_revenue: value.monthlyRevenue || null, contact_preference: value.contactPreference,
-    consent_lgpd: true, consent_at: new Date().toISOString(), crm_status: process.env.VERCEL_ENV === "preview" || institutional ? "ignored" : "pending",
+    consent_lgpd: true, consent_at: new Date().toISOString(), crm_status: queueForCrm ? "pending" : "ignored",
     ...utms,
   };
   const { data: inserted, error } = await client.from("leads").insert(row).select("id").maybeSingle();
@@ -85,7 +87,7 @@ export async function POST(request: Request) {
   }
   if (!leadId) return Response.json({ error: "Não foi possível registrar seu contato agora." }, { status: 500 });
 
-  if (process.env.VERCEL_ENV !== "preview" && !institutional) after(async () => {
+  if (queueForCrm) after(async () => {
     try { await processNextLead(leadId, client); }
     catch { console.error("[datacrazy] Não foi possível iniciar a sincronização pós-resposta.", { leadId }); }
   });
