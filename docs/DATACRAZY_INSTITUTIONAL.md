@@ -86,3 +86,28 @@ A Preview fica disponível para revisão técnica com CRM bloqueado. A validaç�
 depende de um ambiente/fluxo comprovadamente sem disparos e autorização para esse ambiente.
 Depois disso, executar exatamente uma submissão identificada e conferir contato, negócio,
 campos, tags, nota e status no banco. Nunca reenviar automaticamente o teste institucional anterior.
+
+## Tags cadastradas e verificadas no CRM
+
+Foram criadas somente as definições abaixo, sem associação a qualquer contato ou automação.
+Busca "ChatGPT Ads" confirmou exatamente cinco resultados, sem duplicatas:
+
+| Tag | ID |
+| --- | --- |
+| ChatGPT Ads | 806ab605-3589-46f9-b253-f1bbd349c237 |
+| ChatGPT Ads - Gestão | 304165a6-04ea-4472-ad62-8118f34ed11e |
+| ChatGPT Ads - Operação | 30c639f0-6f97-4191-9e79-d9ccbc8c0504 |
+| ChatGPT Ads - Delivery | 0308df5f-4a5c-400d-8885-f37d3800c764 |
+| ChatGPT Ads - Migração | 019b1ad1-bb30-40cb-8eff-09059dceb128 |
+
+A tag antiga "ChatGPT" e todas as tags de embaixadores foram preservadas.
+O resolver usa o catálogo em tempo de execução, exige um único nome correspondente
+e falha antes de criar contato/negócio se a tag estiver ausente ou duplicada.
+
+## Verificação
+
+Código 14a7c50: 43 testes direcionados locais aprovados; TypeScript e lint locais aprovados.
+GitHub Actions 36060426895: npm run check e testes de atribuição/API aprovados;
+inclui build vinext, build Next/Vercel, regressões e testes de conversão.
+Alterações posteriores deste documento não alteram o código executado nesse run.
+A ausência de envio real é deliberada: evidência com mocks não comprova entrega ao CRM.
