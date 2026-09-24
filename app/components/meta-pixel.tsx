@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { flushMetaPixelQueue, META_PIXEL_CONSENT_KEY, trackMetaEvent } from "@/lib/meta-pixel";
+import { TRACKING_CONSENT_EVENT } from "@/lib/openai-pixel";
 
 function bootstrapPixel(pixelId: string) {
   if (window.fbq) {
@@ -66,6 +67,7 @@ export function MetaPixel() {
 
   function choose(value: "accepted" | "rejected") {
     window.localStorage.setItem(META_PIXEL_CONSENT_KEY, value);
+    window.dispatchEvent(new Event(TRACKING_CONSENT_EVENT));
     setConsent(value);
   }
 

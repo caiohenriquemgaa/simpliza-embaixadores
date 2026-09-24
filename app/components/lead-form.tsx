@@ -48,7 +48,7 @@ export function LeadForm({ sourceType = "ambassador", ambassadorId, ambassadorNa
         body: JSON.stringify(payload),
       });
       const result = await readJsonResponse<{ error?: string; ok?: boolean; leadId?: string }>(response);
-      if (!response.ok || !result?.ok || !result.leadId) throw new Error(result?.error || "Não foi possível enviar seus dados.");
+      if (response.status !== 201 || !result?.ok || !result.leadId) throw new Error(result?.error || "Não foi possível enviar seus dados.");
       requestId.current = null;
       setStatus("sent");
       reportLeadAccepted(result.leadId, sourceType, originName, attribution, campaignCode, ambassadorSlug);
