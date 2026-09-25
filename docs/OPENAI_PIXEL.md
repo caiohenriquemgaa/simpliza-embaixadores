@@ -73,3 +73,15 @@ No production promotion or campaign activation is authorized by this document.
 The public configuration URL was observed in the official SDK implementation:
 https://bzrcdn.openai.com/pixel-config/v1/L1f8X3pfviH8puvdcxZLSR.json
 It was used only for read-only audit, not as an undocumented integration API.
+
+## Production authorization — 2026-09-25
+
+This section supersedes the historical Preview-only deployment restriction above.
+Production publication is authorized conditional on passing the existing checks.
+The isolated release starts at validated institutional commit bd74d6f and reuses
+the reviewed Pixel commits, excluding the later institutional CRM synchronization.
+The server now enables the Pixel for Preview and Production institutional routes;
+debug remains Preview-only. Consent, SDK calls and ambassador behavior are unchanged.
+Institutional leads remain crm_status=ignored and never schedule CRM delivery.
+Production environment settings are preserved. Campaign changes are not authorized.
+Post-deploy checks must not create an unnecessary real lead or fabricated ad click.

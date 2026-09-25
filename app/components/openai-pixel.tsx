@@ -5,9 +5,8 @@ import Script from "next/script";
 import { usePathname } from "next/navigation";
 import { initializeOpenAiPixel, isInstitutionalPath, OPENAI_PIXEL_SRC, subscribeOpenAiPixel } from "@/lib/openai-pixel";
 
-export function OpenAiPixel({ preview = false }: { preview?: boolean }) {
+export function OpenAiPixel({ enabled = false, preview = false }: { enabled?: boolean; preview?: boolean }) {
   const pathname = usePathname();
-  const enabled = preview;
   const institutional = isInstitutionalPath(pathname);
   useEffect(() => {
     if (!enabled || !institutional) return;
