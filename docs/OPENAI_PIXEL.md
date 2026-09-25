@@ -1,28 +1,28 @@
 # OpenAI Pixel — institutional Preview
 
-## Privacy blocker (2026-09-24)
+## Consent-based Preview activation
 
-Source **Simpliza | LP Institucional | ChatGPT Ads**, Pixel ID
-`L1f8X3pfviH8puvdcxZLSR`, confirmed through Ads Manager.
-The official SDK's public per-pixel configuration returned
-`automatic_advanced_matching_enabled: true`. Ads Manager's Edit Pixel dialog
-describes automatic detection/hashing of customer information but exposes no
-disable control. Current official documentation provides no client-side option
-to disable automatic advanced matching. Omitting `user` is not sufficient.
+The user explicitly authorized official automatic advanced matching under the
+existing measurement consent, superseding the earlier privacy hold.
+Source: **Simpliza | LP Institucional | ChatGPT Ads**.
+Pixel ID: `L1f8X3pfviH8puvdcxZLSR`.
 
-Therefore `NEXT_PUBLIC_OPENAI_PIXEL_ENABLED` defaults to disabled. No SDK is
-loaded, initialized, or sent any events while this flag is absent/false. Do not
-enable it until the source's automatic matching has been disabled through an
-official supported control (or support) and verified. Do not invent an SDK option,
-block the configuration request, modify the SDK, or accept hashed PII as a workaround.
-No real lead was created for this task; the single authorized test remains pending.
-No Data Crazy code/settings, database schema/history, or production configuration
-was changed.
+The server passes `VERCEL_ENV === "preview"` to the client component. Only Preview
+loads this integration; Production remains disabled. Official `debug: true` is
+restricted to Preview. No extra activation flag or AAM-disable override is used.
+The existing consent is passed BEFORE init: absent/rejected means false; valid
+saved acceptance means true. Banner acceptance updates the official consent
+command. No new banner or visual change.
+
+AAM remains unchanged and may attach SDK-generated SHA-256 hashes under consent.
+The application never passes a `user` object or manually sends identifiers/hashes.
+No Data Crazy settings/code, Supabase schema, ambassador implementation, or
+production deployment was changed. One synthetic Preview lead is authorized.
 
 ## Prepared implementation
 
 - Client component `OpenAiPixel` uses `next/script` with `afterInteractive`, only
-  on `/` and `/inicio`, behind the explicit activation flag.
+  on `/` and `/inicio`, enabled only by the server Preview environment.
 - Official queue; consent is set before the one-time `init` with the real ID.
   Uses the existing cookie preference and its new nonvisual change notification.
 - The existing `simpliza:lead_submitted` hook is the only conversion input.
@@ -31,7 +31,7 @@ was changed.
   options **`{event_id: leadId}`**. The official name differs from generic “Lead”.
 - No form data, attribution parameters, `user` object, amount or fabricated click
   ID is included in our SDK calls. The SDK handles origin, browser reference,
-  timestamps and transport. Disabling automatic matching is an activation prerequisite.
+  timestamps and transport. Automatic matching follows the official SDK and existing consent.
 - In-memory and sessionStorage deduplication suppress repeated accepted IDs,
   including refresh. Leads accepted without consent are not replayed on acceptance.
   A future CAPI must use the same real lead ID, event name and Pixel ID; no CAPI exists here.
@@ -47,20 +47,18 @@ Delegate exclusively to the official SDK: on consent it captures an actual URL
 anchors, preserving the query before consent. The SDK cookie carries attribution
 across subsequent pages after consent. No custom cookie, generated click ID or
 extra persistence mechanism is added. Denial clears SDK cookies, per official
-behavior; attribution must not bypass consent. Live cookie/transport verification
-remains pending while the SDK is blocked; a real advertising-attribution test
+behavior; attribution must not bypass consent. A real advertising-attribution test
 requires an actual eligible ad click.
 
 ## Tests and next validation
 
-`tests/openai-pixel.test.mjs` adds 15 tests: queue/init, actual form handler with
+`tests/openai-pixel.test.mjs` adds 16 tests: queue/init, actual form handler with
 201 and invalid responses, network failure, click/open, refresh, ambassadors,
-SDK delegation, consent/no replay, minimal payload and disabled-by-default route
+SDK delegation, consent/no replay, minimal payload and Preview-only route
 gating. These mock the SDK; they do not claim actual OpenAI receipt or real
 `oppref` persistence. Existing API and attribution tests remain intact.
 
-After resolving automatic matching, enable only the named branch's Preview,
-redeploy, accept measurement consent and submit exactly one authorized synthetic
+For the named branch Preview, accept measurement consent and submit exactly one authorized synthetic
 lead with `intent=delivery` and the specified `teste_pixel` UTMs. Confirm HTTP201,
 Supabase attribution and `crm_status=ignored`/zero attempts, one network event
 and the latest-15-minute Ads Manager event stream. Do not fabricate `oppref`.
