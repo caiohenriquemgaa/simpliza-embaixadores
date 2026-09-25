@@ -50,7 +50,7 @@ export const getPublishedAmbassador = cache(async (slug: string): Promise<Ambass
   if (!client) return slug === felipeSeed.slug ? felipeSeed : null;
   const { data, error } = await client.from("ambassadors").select(ambassadorColumns).eq("slug", slug).eq("status", "published").maybeSingle();
   if (error) throw new Error(`Falha ao carregar embaixador: ${error.message}`);
-  return data ? mapAmbassadorRow(data as DbRow) : null;
+  return data ? mapAmbassadorRow(data as DbRow) : slug === felipeSeed.slug ? felipeSeed : null;
 });
 
 export async function getAmbassadorForPreview(id: string): Promise<Ambassador | null> {
