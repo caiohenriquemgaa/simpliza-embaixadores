@@ -45,6 +45,18 @@ test("A: init is once, consent precedes init, official queue holds commands", ()
   pixel.initializeOpenAiPixel(); pixel.initializeOpenAiPixel();
   assert.deepEqual(window.oaiq.q, [["consent", false], ["init", { pixelId: "L1f8X3pfviH8puvdcxZLSR" }]]);
 });
+test("debug is opt-in for Preview; consent changes use the official command", () => {
+  const b = browser("rejected"); pixel.initializeOpenAiPixel({ debug: true });
+  const cleanup = pixel.subscribeOpenAiPixel();
+  assert.deepEqual(b.calls.slice(0, 2), [["consent", false], ["init", { pixelId: pixel.OPENAI_PIXEL_ID, debug: true }]]);
+  window.localStorage.getItem = () => "accepted";
+  window.dispatchEvent(new Event(pixel.TRACKING_CONSENT_EVENT));
+  assert.deepEqual(b.calls.at(-1), ["consent", true]);
+  window.localStorage.getItem = () => "rejected";
+  window.dispatchEvent(new Event(pixel.TRACKING_CONSENT_EVENT));
+  assert.deepEqual(b.calls.at(-1), ["consent", false]);
+  cleanup();
+});
 test("B/I/J: actual form handler HTTP 201 emits one Lead, generate_lead and central hook", async () => {
   const b = browser(); pixel.initializeOpenAiPixel(); pixel.subscribeOpenAiPixel();
   const f = formHarness(); await f.submit(); await f.submit();
@@ -103,7 +115,7 @@ test("consent denied leads are not replayed after acceptance; extra personal fie
   pixel.measureOpenAiLead({ ...detail, event_id: "consented-id" });
   assert.deepEqual(b.leads(), [["measure", "lead_created", { type: "customer_action" }, { event_id: "consented-id" }]]);
 });
-test("integration stays disabled without explicit privacy-reviewed activation; only institutional routes mount SDK", async () => {
+test("only Preview institutional routes mount SDK; production stays disabled", async () => {
   const src = await readFile(new URL("../app/components/openai-pixel.tsx", import.meta.url), "utf8");
   const code = ts.transpileModule(src, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText;
   const previous = process.env.NEXT_PUBLIC_OPENAI_PIXEL_ENABLED;
@@ -113,7 +125,7 @@ test("integration stays disabled without explicit privacy-reviewed activation; o
       if (enabled === undefined) delete process.env.NEXT_PUBLIC_OPENAI_PIXEL_ENABLED; else process.env.NEXT_PUBLIC_OPENAI_PIXEL_ENABLED = enabled;
       const deps = { react: { useEffect: fn => effects.push(fn) }, "react/jsx-runtime": { jsx: (type, props) => ({ type, props }) }, "next/script": { default: "script" }, "next/navigation": { usePathname: () => path }, "@/lib/openai-pixel": pixel };
       new Function("require", "module", "exports", code)(name => deps[name], mod, mod.exports);
-      const b = browser(); const tree = mod.exports.OpenAiPixel(); effects.forEach(fn => fn());
+      const b = browser(); const tree = mod.exports.OpenAiPixel({ preview: enabled === "true" }); effects.forEach(fn => fn());
       const shouldLoad = enabled === "true" && pixel.isInstitutionalPath(path);
       assert.equal(tree !== null, shouldLoad); assert.equal(b.calls.length > 0, shouldLoad);
     }

@@ -24,7 +24,7 @@ function hasConsent() {
 
 // The official queue preserves commands until next/script loads the SDK.
 // No user object, automatic-matching override, or hand-managed oppref cookie.
-export function initializeOpenAiPixel() {
+export function initializeOpenAiPixel({ debug = false }: { debug?: boolean } = {}) {
   if (typeof window === "undefined" || window.simplizaOpenAiInitialized) return;
   if (!window.oaiq) {
     const queue = (...args: unknown[]) => { queue.q.push(args); };
@@ -32,7 +32,7 @@ export function initializeOpenAiPixel() {
     window.oaiq = queue;
   }
   window.oaiq("consent", hasConsent());
-  window.oaiq("init", { pixelId: OPENAI_PIXEL_ID });
+  window.oaiq("init", { pixelId: OPENAI_PIXEL_ID, ...(debug ? { debug: true } : {}) });
   window.simplizaOpenAiInitialized = true;
 }
 
